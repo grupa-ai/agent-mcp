@@ -4,9 +4,6 @@ MCPAgent - An AutoGen agent with Model Context Protocol capabilities.
 This module provides a transparent implementation of the Model Context Protocol
 for AutoGen agents, allowing them to standardize context provision to LLMs and
 interact with other MCP-capable systems with minimal configuration.
-
-For demonstration purposes, this implementation includes a fallback mode that works
-without requiring the actual AutoGen library.
 """
 
 import json
@@ -14,52 +11,11 @@ import uuid
 import inspect
 from typing import Any, Dict, List, Optional, Union, Callable, Tuple
 
-# For demonstration purposes, we'll always use a simple base class
-# This allows us to run without requiring the full AutoGen library
-
-# Define our simple base agent class for demonstration
-class DemoBaseAgent:
-    """Simple base agent class for demonstration when AutoGen is not available."""
-    
-    def __init__(
-        self,
-        name: str,
-        system_message: Optional[str] = None,
-        is_termination_msg: Optional[Callable] = None,
-        max_consecutive_auto_reply: Optional[int] = None,
-        human_input_mode: str = "NEVER",
-        **kwargs
-    ):
-        self.name = name
-        self.system_message = system_message or "I am a demo agent."
-        self.is_termination_msg = is_termination_msg
-        self.max_consecutive_auto_reply = max_consecutive_auto_reply
-        self.human_input_mode = human_input_mode
-        self.functions = {}
-        self.llm_config = kwargs.get("llm_config")
-        
-    def register_function(self, function_map, name=None, description=None):
-        """Register a function with this agent."""
-        for func_name, func in function_map.items():
-            self.functions[func_name] = func
-            
-    def generate_reply(self, messages=None, sender=None, exclude_list=None, **kwargs):
-        """Generate a reply (stub for demo)."""
-        return f"This is a demo reply from {self.name}. In a real implementation, this would use an LLM."
-        
-# Define a simple Agent class for use in type hints
-class Agent(DemoBaseAgent):
-    """Simple Agent class for demonstration."""
-    pass
-
-# Use the demo base agent class as our base
-BaseAgentClass = DemoBaseAgent
-
-print("Note: Running in demonstration mode.")
-print("This implementation simulates MCP functionality without requiring the full AutoGen library.")
+# Import AutoGen
+from autogen import ConversableAgent, Agent
 
 
-class MCPAgent(BaseAgentClass):
+class MCPAgent(ConversableAgent):
     """
     An AutoGen agent with Model Context Protocol capabilities.
 
@@ -123,35 +79,60 @@ class MCPAgent(BaseAgentClass):
         """Register default MCP tools that are available to all MCP agents."""
         
         # Context management tools
+        def context_get(key: str) -> Dict:
+            """Get a context item by key."""
+            return self._mcp_context_get(key)
+            
+        def context_set(key: str, value: Any) -> Dict:
+            """Set a context item with the given key and value."""
+            return self._mcp_context_set(key, value)
+            
+        def context_list() -> Dict:
+            """List all available context keys."""
+            return self._mcp_context_list()
+            
+        def context_remove(key: str) -> Dict:
+            """Remove a context item by key."""
+            return self._mcp_context_remove(key)
+            
+        def mcp_info() -> Dict:
+            """Get information about this MCP agent's capabilities."""
+            return self._mcp_info()
+        
+        # Register the tools with valid names for AutoGen (only letters, numbers, underscore, dash)
         self.register_mcp_tool(
-            name="context.get",
+            name="context_get",
             description="Get a specific context item by key",
-            func=self._mcp_context_get,
+            func=context_get,
+            key_description="The key of the context item to retrieve"
         )
         
         self.register_mcp_tool(
-            name="context.set",
+            name="context_set",
             description="Set a context item with the given key and value",
-            func=self._mcp_context_set,
+            func=context_set,
+            key_description="The key to store the value under",
+            value_description="The value to store"
         )
         
         self.register_mcp_tool(
-            name="context.list",
+            name="context_list",
             description="List all available context keys",
-            func=self._mcp_context_list,
+            func=context_list
         )
         
         self.register_mcp_tool(
-            name="context.remove",
+            name="context_remove",
             description="Remove a context item by key",
-            func=self._mcp_context_remove,
+            func=context_remove,
+            key_description="The key of the context item to remove"
         )
 
         # Metadata tools
         self.register_mcp_tool(
-            name="mcp.info",
+            name="mcp_info",
             description="Get information about this MCP agent's capabilities",
-            func=self._mcp_info,
+            func=mcp_info
         )
 
     def register_mcp_tool(
@@ -197,23 +178,34 @@ class MCPAgent(BaseAgentClass):
             "function": func,
         }
 
-        # Also register as an AutoGen function tool
-        def tool_wrapper(*args, **kwargs):
-            return func(self, *args, **kwargs)
+        # Create a wrapper that calls the function correctly
+        # For functions defined within context_management, they already handle self
+        def tool_wrapper(**kwargs):
+            return func(**kwargs)
         
-        # Different implementation based on whether we're using actual AutoGen or our demo version
-        try:
-            # For actual AutoGen, which has a different register_function signature
-            self.register_function(
-                function_map={name: tool_wrapper},
-            )
-        except TypeError:
-            # For our demo version
-            self.register_function(
-                function_map={name: tool_wrapper},
-                name=name,
-                description=description,
-            )
+        # Register the tool with AutoGen's function mechanism
+        function_schema = {
+            "name": name,
+            "description": description,
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+        
+        # Add parameter descriptions to the schema
+        for param in params:
+            param_name = param["name"]
+            function_schema["parameters"]["properties"][param_name] = {
+                "type": param.get("type", "string"),
+                "description": param["description"]
+            }
+            if param["required"]:
+                function_schema["parameters"]["required"].append(param_name)
+        
+        # Register with AutoGen - use the simplest form
+        self.register_function({name: tool_wrapper})
 
     def register_agent_as_tool(self, agent: Agent, name: Optional[str] = None) -> None:
         """
@@ -224,11 +216,12 @@ class MCPAgent(BaseAgentClass):
             name: Optional custom name for the tool, defaults to agent's name
         """
         if name is None:
-            name = f"agent.{agent.name}"
+            # Use valid characters for AutoGen
+            name = f"agent_{agent.name}"
             
-        def agent_tool_wrapper(self, message: str, **kwargs):
+        def agent_tool_wrapper(message: str, **kwargs):
             """Wrapper to call another agent and return its response."""
-            response = agent.generate_reply(sender=self, message=message)
+            response = agent.generate_reply(sender=self, messages=[{"role": "user", "content": message}])
             return {"response": response if response else "No response from agent."}
             
         self.register_mcp_tool(
@@ -342,23 +335,31 @@ class MCPAgent(BaseAgentClass):
                 # Check if message contains MCP tool calls
                 self._process_mcp_tool_calls(last_message)
                 
-        # Inject context information into system message
-        original_system = self.system_message
+        # For LLM-based generation, handle context in a different way
+        # For AutoGen, we can't directly modify system_message since it's a property
         if hasattr(self, "llm_config") and self.llm_config:
             context_summary = self._generate_context_summary()
             
-            if context_summary:
-                self.system_message = f"{original_system}\n\nAvailable context:\n{context_summary}"
+            if context_summary and messages:
+                # Instead of modifying system_message, add context in the message list
+                context_msg = {
+                    "role": "system",
+                    "content": f"Current context information:\n{context_summary}"
+                }
+                
+                # Insert the context message at an appropriate position in the conversation
+                if len(messages) > 1:
+                    # Insert before the last message
+                    messages = messages[:-1] + [context_msg] + [messages[-1]]
+                else:
+                    # Insert before the only message
+                    messages = [context_msg] + messages
         
-        try:
-            # Call the parent class method to generate the reply
-            reply = super().generate_reply(
-                messages=messages, sender=sender, exclude_list=exclude_list, **kwargs
-            )
-            return reply
-        finally:
-            # Restore original system message
-            self.system_message = original_system
+        # Call the parent class method to generate the reply
+        reply = super().generate_reply(
+            messages=messages, sender=sender, exclude_list=exclude_list, **kwargs
+        )
+        return reply
 
     def _generate_context_summary(self) -> str:
         """
@@ -388,6 +389,11 @@ class MCPAgent(BaseAgentClass):
         """
         Process any MCP tool calls in a message.
         
+        This function supports multiple tool call formats:
+        1. OpenAI function call format (if present in message)
+        2. Explicit MCP call format: mcp.call({...})
+        3. Natural language tool call detection (basic)
+        
         Args:
             message: The message to process for tool calls
         """
@@ -395,12 +401,34 @@ class MCPAgent(BaseAgentClass):
         if not isinstance(content, str):
             return
             
-        # Very simple parsing for tool calls - in production would use more robust methods
-        tool_call_pattern = r"mcp\.call\(([^)]+)\)"
-        import re
+        # Check for tool_calls in the OpenAI message format
+        if "tool_calls" in message:
+            tool_calls = message.get("tool_calls", [])
+            for tool_call in tool_calls:
+                try:
+                    # Extract tool name and arguments
+                    function = tool_call.get("function", {})
+                    tool_name = function.get("name")
+                    arguments_str = function.get("arguments", "{}")
+                    arguments = json.loads(arguments_str)
+                    
+                    if tool_name in self.mcp_tools:
+                        # Execute the tool
+                        func = self.mcp_tools[tool_name]["function"]
+                        result = func(**arguments)
+                        
+                        # Store the result in the context
+                        result_key = f"result_{uuid.uuid4().hex[:8]}"
+                        self.context_store[result_key] = result
+                        print(f"Executed tool '{tool_name}' with result: {result}")
+                except Exception as e:
+                    print(f"Error processing OpenAI tool call: {e}")
         
-        tool_calls = re.findall(tool_call_pattern, content)
-        for call in tool_calls:
+        # Check for explicit MCP calls in the format mcp.call({...})
+        import re
+        tool_call_pattern = r"mcp\.call\(([^)]+)\)"
+        explicit_calls = re.findall(tool_call_pattern, content)
+        for call in explicit_calls:
             try:
                 # Parse the tool call arguments
                 call_args = json.loads(f"{{{call}}}")
@@ -409,13 +437,37 @@ class MCPAgent(BaseAgentClass):
                 
                 if tool_name in self.mcp_tools:
                     # Execute the tool
-                    result = self.mcp_tools[tool_name]["function"](self, **arguments)
+                    func = self.mcp_tools[tool_name]["function"]
+                    result = func(**arguments)
                     
                     # Store the result in the context
                     result_key = f"result_{uuid.uuid4().hex[:8]}"
                     self.context_store[result_key] = result
+                    print(f"Executed explicit MCP call to '{tool_name}' with result: {result}")
             except Exception as e:
-                print(f"Error processing MCP tool call: {e}")
+                print(f"Error processing explicit MCP tool call: {e}")
+        
+        # Add basic natural language detection for common context operations
+        # This is a simplified approach - in production, you would use more robust NLP
+        content_lower = content.lower()
+        
+        # Very basic pattern matching for user requests to update context
+        if ("add" in content_lower and "to my interests" in content_lower) or \
+           ("update my interests" in content_lower):
+            try:
+                # Extract the interest to add - very simplified regex extraction
+                interest_match = re.search(r"add ['\"]?([^'\"]+)['\"]? to my interests", content_lower)
+                if interest_match:
+                    interest = interest_match.group(1).strip()
+                    if "user_preferences" in self.context_store:
+                        user_prefs = self.context_store["user_preferences"]
+                        if isinstance(user_prefs, dict) and "interests" in user_prefs:
+                            if interest not in user_prefs["interests"]:
+                                user_prefs["interests"].append(interest)
+                                self.update_context("user_preferences", user_prefs)
+                                print(f"Added '{interest}' to user interests via natural language detection")
+            except Exception as e:
+                print(f"Error processing natural language context update: {e}")
 
     def update_context(self, key: str, value: Any) -> None:
         """
@@ -472,5 +524,9 @@ class MCPAgent(BaseAgentClass):
         if tool_name not in self.mcp_tools:
             raise ValueError(f"Tool '{tool_name}' not found")
             
+        # Get the tool and its function
         tool = self.mcp_tools[tool_name]
-        return tool["function"](self, **kwargs)
+        func = tool["function"]
+        
+        # Call the function directly without passing self again (it's already bound)
+        return func(**kwargs)

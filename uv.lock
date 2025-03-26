@@ -37,6 +37,18 @@ wheels = [
 ]
 
 [[package]]
+name = "autogen"
+version = "0.8.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyautogen" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/55/b044affb92ea9f035456aa74032787ae48818d706071b3ee16ca1f0e7de3/autogen-0.8.3.tar.gz", hash = "sha256:a8f1d172e9370f5a9c4ec42a729dbfb50080e401ec3e8fbab018fff8aedb1b0c", size = 40962 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/21/154a418906bb58c778bbd2237be38b52c80395e347296cdcd171852ca23c/autogen-0.8.3-py3-none-any.whl", hash = "sha256:ac7a9099b0c900704f0410693bac065d28b018b496a8109bdf9943ba0f27e6be", size = 12417 },
+]
+
+[[package]]
 name = "certifi"
 version = "2025.1.31"
 source = { registry = "https://pypi.org/simple" }
@@ -426,12 +438,14 @@ name = "repl-nix-workspace"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "autogen" },
     { name = "openai" },
     { name = "pyautogen" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "autogen", specifier = ">=0.8.3" },
     { name = "openai", specifier = ">=1.68.2" },
     { name = "pyautogen", specifier = ">=0.8.3" },
 ]

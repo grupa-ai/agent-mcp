@@ -2,11 +2,15 @@
 Test module for MCPAgent.
 
 This module provides testing capabilities for the MCPAgent class,
-demonstrating its MCP capabilities and basic interaction with AutoGen.
+demonstrating its MCP capabilities and interaction with AutoGen.
 """
 
+import os
 import json
 from typing import Dict, List, Any, Optional
+
+# Import AutoGen components
+from autogen import UserProxyAgent, AssistantAgent
 
 # Import MCPAgent from the mcp_agent module
 from mcp_agent import MCPAgent
@@ -26,27 +30,27 @@ def test_basic_mcp_functionality():
     print("\nTesting context operations:")
     
     # Set context
-    result = mcp_agent.execute_tool("context.set", key="user_name", value="Alice")
+    result = mcp_agent.execute_tool("context_set", key="user_name", value="Alice")
     print(f"Set context: {result}")
     
     # Get context
-    result = mcp_agent.execute_tool("context.get", key="user_name")
+    result = mcp_agent.execute_tool("context_get", key="user_name")
     print(f"Get context: {result}")
     
     # List context
-    result = mcp_agent.execute_tool("context.list")
+    result = mcp_agent.execute_tool("context_list")
     print(f"List context: {result}")
     
     # Remove context
-    result = mcp_agent.execute_tool("context.remove", key="user_name")
+    result = mcp_agent.execute_tool("context_remove", key="user_name")
     print(f"Remove context: {result}")
     
     # Check context was removed
-    result = mcp_agent.execute_tool("context.list")
+    result = mcp_agent.execute_tool("context_list")
     print(f"List context after removal: {result}")
     
     # Test MCP info
-    result = mcp_agent.execute_tool("mcp.info")
+    result = mcp_agent.execute_tool("mcp_info")
     print(f"\nMCP info: {json.dumps(result, indent=2)}")
 
 
@@ -59,15 +63,15 @@ def test_custom_tool_registration():
         name="Tool_Agent"
     )
     
-    # Define a custom tool function
-    def calculate_sum(self, a: int, b: int) -> Dict[str, Any]:
+    # Define a custom tool function that doesn't use 'self'
+    def calculate_sum(a: int, b: int) -> Dict[str, Any]:
         """Calculate the sum of two numbers."""
         result = a + b
         return {"status": "success", "result": result}
     
-    # Register the custom tool
+    # Register the custom tool (using underscore instead of dot for valid AutoGen names)
     mcp_agent.register_mcp_tool(
-        name="math.sum",
+        name="math_sum",
         description="Calculate the sum of two numbers",
         func=calculate_sum,
         a_description="First number to add",
@@ -75,7 +79,7 @@ def test_custom_tool_registration():
     )
     
     # Test the custom tool
-    result = mcp_agent.execute_tool("math.sum", a=5, b=7)
+    result = mcp_agent.execute_tool("math_sum", a=5, b=7)
     print(f"Custom tool result: {result}")
     
     # Check that the tool appears in the available tools list
@@ -122,7 +126,7 @@ def test_multiple_context_operations():
     print("Added tasks context")
     
     # List all context keys
-    result = mcp_agent.execute_tool("context.list")
+    result = mcp_agent.execute_tool("context_list")
     print(f"\nAll context keys: {result}")
     
     # Generate context summary
@@ -157,7 +161,7 @@ def test_agent_as_tool_simulation():
     tool_list = coordinator.list_available_tools()
     print("Available tools for coordinator:")
     for tool in tool_list:
-        if tool["name"].startswith("agent."):
+        if tool["name"].startswith("agent_"):
             print(f"- {tool['name']}: {tool['description']}")
     
     # This would normally make a real call, but in this simulation we'll just show the mechanism
@@ -165,6 +169,98 @@ def test_agent_as_tool_simulation():
     print("- Agent: HelperAgent")
     print("- Message: 'Can you help me analyze this data?'")
     print("- Response would be returned to the Coordinator")
+
+
+def test_with_real_llm():
+    """Test MCPAgent with a real LLM."""
+    # Check for API key
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        print("\n=== Skipping Real LLM Test (No API Key) ===")
+        print("To run this test, set the OPENAI_API_KEY environment variable.")
+        return
+        
+    print("\n=== Testing MCPAgent with Real LLM ===")
+    
+    # Configure the LLM
+    config = {
+        "config_list": [{"model": "gpt-3.5-turbo", "api_key": api_key}],
+    }
+    
+    # Create two MCP agents with LLM capabilities
+    assistant = MCPAgent(
+        name="MCP_Assistant",
+        system_message="You are a helpful assistant with MCP capabilities. Use the context provided to enhance your responses.",
+        llm_config=config
+    )
+    
+    user = MCPAgent(
+        name="MCP_User",
+        system_message="You are a user agent that interacts with the assistant.",
+        llm_config=config,
+        human_input_mode="NEVER"  # Don't actually ask for input
+    )
+    
+    # Add context to the assistant
+    assistant.update_context("weather", {
+        "location": "San Francisco",
+        "temperature": 72,
+        "conditions": "Sunny",
+        "forecast": ["Sunny", "Partly Cloudy", "Cloudy", "Rain"]
+    })
+    
+    assistant.update_context("user_preferences", {
+        "name": "Sam",
+        "interests": ["hiking", "photography", "cooking"],
+        "favorite_color": "blue"
+    })
+    
+    # Let the agents interact
+    print("\nStarting conversation with context-aware MCPAgent:")
+    
+    # Initial message
+    message = "Hello! What's the weather like today and what activities might you recommend for me?"
+    print(f"\nUser: {message}")
+    
+    # Assistant responds using context
+    response = assistant.generate_reply(
+        messages=[{"role": "user", "content": message}],
+        sender=user
+    )
+    print(f"\nAssistant: {response}")
+    
+    # Test a tool call - but do it manually since LLM might not know how to do it yet
+    message = "Can you add 'mountain biking' to my interests?"
+    print(f"\nUser: {message}")
+    
+    # This should trigger a tool call to update context
+    response = assistant.generate_reply(
+        messages=[{"role": "user", "content": message}],
+        sender=user
+    )
+    print(f"\nAssistant: {response}")
+    
+    # Let's manually update the context to demonstrate the capability
+    print("\nManually updating context...")
+    user_prefs = assistant.get_context("user_preferences")
+    if isinstance(user_prefs, dict) and "interests" in user_prefs and isinstance(user_prefs["interests"], list):
+        user_prefs["interests"].append("mountain biking")
+        assistant.update_context("user_preferences", user_prefs)
+        print("Added 'mountain biking' to interests")
+    
+    # Check if context was updated
+    updated_preferences = assistant.get_context("user_preferences")
+    print(f"\nUpdated user preferences: {updated_preferences}")
+    
+    # Final exchange
+    message = "What activities do I enjoy now?"
+    print(f"\nUser: {message}")
+    
+    response = assistant.generate_reply(
+        messages=[{"role": "user", "content": message}],
+        sender=user
+    )
+    print(f"\nAssistant: {response}")
 
 
 def main():
@@ -175,9 +271,10 @@ def main():
     test_multiple_context_operations()
     test_agent_as_tool_simulation()
     
+    # Run test with real LLM if API key is available
+    test_with_real_llm()
+    
     print("\n=== All tests completed successfully ===")
-    print("Note: These tests demonstrate the MCP functionality without requiring an actual LLM.")
-    print("For a full demonstration with LLM responses, you would need to provide an OpenAI API key.")
 
 
 if __name__ == "__main__":
