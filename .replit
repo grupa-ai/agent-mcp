@@ -1,0 +1,51 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "MCPAgentTest"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "mcp_agent_test"
+
+[[workflows.workflow]]
+name = "MCPAgentTest"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install pyautogen && python test_mcp_agent.py"
+
+[[workflows.workflow]]
+name = "mcp_agent_test"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python test_mcp_agent.py"
+
+[deployment]
+run = ["sh", "-c", "pip install pyautogen && python test_mcp_agent.py"]
