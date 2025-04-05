@@ -227,6 +227,51 @@ class AgentNetwork:
             profile = agent.get_context("profile")
             specialty = profile.get("specialty") if profile else "unknown"
             print(f"- {agent.name} ({agent_id}): {specialty}")
+    
+    def get_context(self, agent_id, key):
+        """Get a context value from an agent."""
+        if agent_id not in self.agents:
+            return None
+        
+        agent = self.agents[agent_id]
+        return agent.get_context(key)
+    
+    def interact_with_agent_programmatically(self, agent_id, message):
+        """
+        Interact with an agent programmatically without requiring user input.
+        
+        This method is similar to interact_with_agent but allows for automation
+        in scripts and demonstrations.
+        
+        Args:
+            agent_id: The ID of the agent to interact with
+            message: The message to send to the agent
+            
+        Returns:
+            The agent's response as a string
+        """
+        if agent_id not in self.agents:
+            print(f"Agent '{agent_id}' not found in the network.")
+            return "Error: Agent not found"
+            
+        agent = self.agents[agent_id]
+        
+        # Include current topic in the context if available
+        if self.current_topic:
+            # Check if agent has the current_topic in context
+            if not agent.has_context("current_topic"):
+                agent.update_context("current_topic", self.current_topic)
+        
+        # Format the user message
+        print(f"\nMessage to {agent.name}: {message}")
+        
+        # Send message to the agent
+        response = agent.generate_reply(
+            messages=[{"role": "user", "content": message}]
+        )
+        
+        print(f"\n{agent.name}: {response}")
+        return response
 
 def main():
     """Run the agent network example."""

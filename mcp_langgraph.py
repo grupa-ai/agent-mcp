@@ -22,6 +22,95 @@ from langchain_core.tools import tool
 
 T = TypeVar('T')
 
+
+class SharedContext:
+    """
+    A shared context store that can be used by multiple MCPNodes.
+    
+    This class provides a centralized context store that allows multiple
+    MCPNodes to share context with each other, enabling seamless
+    context sharing across a LangGraph agent network.
+    
+    Attributes:
+        context_store (Dict): The shared context store
+    """
+    
+    def __init__(self):
+        """Initialize a new shared context store."""
+        self.context_store = {}
+    
+    def set(self, key: str, value: Any) -> None:
+        """
+        Set a value in the shared context.
+        
+        Args:
+            key: The key to store the value under
+            value: The value to store
+        """
+        self.context_store[key] = value
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Get a value from the shared context.
+        
+        Args:
+            key: The key to retrieve
+            default: Default value to return if key not found
+            
+        Returns:
+            The value associated with the key, or the default if not found
+        """
+        return self.context_store.get(key, default)
+    
+    def has(self, key: str) -> bool:
+        """
+        Check if a key exists in the shared context.
+        
+        Args:
+            key: The key to check for
+            
+        Returns:
+            True if the key exists, False otherwise
+        """
+        return key in self.context_store
+    
+    def remove(self, key: str) -> bool:
+        """
+        Remove a key from the shared context.
+        
+        Args:
+            key: The key to remove
+            
+        Returns:
+            True if the key was removed, False if it didn't exist
+        """
+        if key in self.context_store:
+            del self.context_store[key]
+            return True
+        return False
+    
+    def list_keys(self) -> List[str]:
+        """
+        List all keys in the shared context.
+        
+        Returns:
+            List of all keys in the context
+        """
+        return list(self.context_store.keys())
+    
+    def clear(self) -> None:
+        """Clear all keys from the shared context."""
+        self.context_store.clear()
+    
+    def update(self, other_context: Dict[str, Any]) -> None:
+        """
+        Update the shared context with another dictionary.
+        
+        Args:
+            other_context: Dictionary to update the context with
+        """
+        self.context_store.update(other_context)
+
 class MCPNode:
     """
     A LangGraph node with Model Context Protocol capabilities.
@@ -42,6 +131,8 @@ class MCPNode:
         self,
         name: str,
         system_message: Optional[str] = None,
+        context: Optional[SharedContext] = None,
+        llm: Any = None,
         **kwargs
     ):
         """
@@ -50,15 +141,31 @@ class MCPNode:
         Args:
             name: The name of the node
             system_message: Optional system message to include in the node's context
+            context: Optional shared context object to use instead of local context
+            llm: The language model to use with this node
             **kwargs: Additional keyword arguments
         """
         self.name = name
+        self.llm = llm
         
         # MCP specific attributes
-        self.context_store = {}
         self.mcp_tools = {}
         self.mcp_id = str(uuid.uuid4())
         self.mcp_version = "0.1.0"  # MCP version implemented
+        
+        # Set up context - either use provided shared context or create local context
+        if context is not None and isinstance(context, SharedContext):
+            # Use provided shared context
+            self._shared_context = context
+            self._use_shared_context = True
+            # Set a node-specific key in the shared context to store node-specific data
+            node_key = f"node_{self.mcp_id}"
+            if not self._shared_context.has(node_key):
+                self._shared_context.set(node_key, {})
+        else:
+            # Use local context
+            self.context_store = {}
+            self._use_shared_context = False
         
         # Add system message to context if provided
         if system_message:
@@ -207,9 +314,14 @@ class MCPNode:
         Returns:
             Dict containing the value or an error message
         """
-        if key in self.context_store:
-            return {"status": "success", "value": self.context_store[key]}
-        return {"status": "error", "message": f"Key '{key}' not found in context"}
+        if self._use_shared_context:
+            if self._shared_context.has(key):
+                return {"status": "success", "value": self._shared_context.get(key)}
+            return {"status": "error", "message": f"Key '{key}' not found in shared context"}
+        else:
+            if key in self.context_store:
+                return {"status": "success", "value": self.context_store[key]}
+            return {"status": "error", "message": f"Key '{key}' not found in context"}
     
     def _mcp_context_set(self, key: str, value: Any) -> Dict:
         """
@@ -222,8 +334,12 @@ class MCPNode:
         Returns:
             Dict indicating success or failure
         """
-        self.context_store[key] = value
-        return {"status": "success", "message": f"Context key '{key}' set successfully"}
+        if self._use_shared_context:
+            self._shared_context.set(key, value)
+            return {"status": "success", "message": f"Shared context key '{key}' set successfully"}
+        else:
+            self.context_store[key] = value
+            return {"status": "success", "message": f"Context key '{key}' set successfully"}
     
     def _mcp_context_list(self) -> Dict:
         """
@@ -232,7 +348,10 @@ class MCPNode:
         Returns:
             Dict containing the list of context keys
         """
-        return {"status": "success", "keys": list(self.context_store.keys())}
+        if self._use_shared_context:
+            return {"status": "success", "keys": self._shared_context.list_keys()}
+        else:
+            return {"status": "success", "keys": list(self.context_store.keys())}
     
     def _mcp_context_remove(self, key: str) -> Dict:
         """
@@ -244,10 +363,16 @@ class MCPNode:
         Returns:
             Dict indicating success or failure
         """
-        if key in self.context_store:
-            del self.context_store[key]
-            return {"status": "success", "message": f"Context key '{key}' removed successfully"}
-        return {"status": "error", "message": f"Key '{key}' not found in context"}
+        if self._use_shared_context:
+            if self._shared_context.has(key):
+                self._shared_context.remove(key)
+                return {"status": "success", "message": f"Shared context key '{key}' removed successfully"}
+            return {"status": "error", "message": f"Key '{key}' not found in shared context"}
+        else:
+            if key in self.context_store:
+                del self.context_store[key]
+                return {"status": "success", "message": f"Context key '{key}' removed successfully"}
+            return {"status": "error", "message": f"Key '{key}' not found in context"}
     
     def _mcp_info(self) -> Dict:
         """
@@ -278,7 +403,10 @@ class MCPNode:
             key: The context key
             value: The context value
         """
-        self.context_store[key] = value
+        if self._use_shared_context:
+            self._shared_context.set(key, value)
+        else:
+            self.context_store[key] = value
     
     def get_context(self, key: str) -> Any:
         """
@@ -290,7 +418,25 @@ class MCPNode:
         Returns:
             The context value or None if not found
         """
-        return self.context_store.get(key)
+        if self._use_shared_context:
+            return self._shared_context.get(key)
+        else:
+            return self.context_store.get(key)
+    
+    def has_context(self, key: str) -> bool:
+        """
+        Check if a key exists in the context.
+        
+        Args:
+            key: The key to check for
+            
+        Returns:
+            True if the key exists, False otherwise
+        """
+        if self._use_shared_context:
+            return self._shared_context.has(key)
+        else:
+            return key in self.context_store
     
     def list_available_tools(self) -> List[Dict]:
         """
@@ -306,6 +452,17 @@ class MCPNode:
             }
             for name, tool in self.mcp_tools.items()
         ]
+    
+    def add_tool(self, tool_func: Callable) -> None:
+        """
+        Add a tool to this MCPNode.
+        
+        This is a convenience method that calls register_mcp_tool
+        
+        Args:
+            tool_func: The tool function to add
+        """
+        self.register_mcp_tool(tool_func)
     
     def execute_tool(self, tool_name: str, **kwargs) -> Any:
         """
@@ -371,24 +528,52 @@ class MCPNode:
         Returns:
             String summary of available context
         """
-        if not self.context_store:
-            return ""
+        # Get the context to summarize - either shared or local
+        if self._use_shared_context:
+            context_keys = self._shared_context.list_keys()
+            # Skip non-essential keys to prevent overwhelming the context
+            context_keys = [k for k in context_keys if not k.startswith("node_")]
             
-        summary_parts = []
-        for key, value in self.context_store.items():
-            # Skip the system message in the summary
-            if key == "system_message":
-                continue
+            if not context_keys:
+                return ""
+            
+            summary_parts = []
+            for key in context_keys:
+                # Skip the system message in the summary
+                if key == "system_message":
+                    continue
                 
-            # For complex objects, just indicate their type
-            if isinstance(value, dict):
-                summary_parts.append(f"- {key}: Dictionary with {len(value)} items")
-            elif isinstance(value, list):
-                summary_parts.append(f"- {key}: List with {len(value)} items")
-            elif isinstance(value, str) and len(value) > 100:
-                summary_parts.append(f"- {key}: Text ({len(value)} chars)")
-            else:
-                summary_parts.append(f"- {key}: {value}")
+                value = self._shared_context.get(key)
+                
+                # For complex objects, just indicate their type
+                if isinstance(value, dict):
+                    summary_parts.append(f"- {key}: Dictionary with {len(value)} items")
+                elif isinstance(value, list):
+                    summary_parts.append(f"- {key}: List with {len(value)} items")
+                elif isinstance(value, str) and len(value) > 100:
+                    summary_parts.append(f"- {key}: Text ({len(value)} chars)")
+                else:
+                    summary_parts.append(f"- {key}: {value}")
+        else:
+            # Local context
+            if not self.context_store:
+                return ""
+                
+            summary_parts = []
+            for key, value in self.context_store.items():
+                # Skip the system message in the summary
+                if key == "system_message":
+                    continue
+                    
+                # For complex objects, just indicate their type
+                if isinstance(value, dict):
+                    summary_parts.append(f"- {key}: Dictionary with {len(value)} items")
+                elif isinstance(value, list):
+                    summary_parts.append(f"- {key}: List with {len(value)} items")
+                elif isinstance(value, str) and len(value) > 100:
+                    summary_parts.append(f"- {key}: Text ({len(value)} chars)")
+                else:
+                    summary_parts.append(f"- {key}: {value}")
                 
         return "\n".join(summary_parts)
 
@@ -434,7 +619,21 @@ class MCPReactAgent(MCPNode):
             return create_react_agent(llm, all_tools, system_message=system_message)
         else:
             # Older version without system_message parameter
-            return create_react_agent(llm, all_tools)
+            # For older versions, we need to set the system message in the LLM's model_kwargs
+            # to avoid the "system is not a default parameter" warning
+            from langchain_openai import ChatOpenAI
+            if isinstance(llm, ChatOpenAI):
+                # Clone the LLM with system in model_kwargs instead
+                import copy
+                new_llm = copy.copy(llm)
+                # Add system message to model_kwargs
+                model_kwargs = getattr(new_llm, 'model_kwargs', {}) or {}
+                model_kwargs['messages'] = [{"role": "system", "content": system_message}]
+                new_llm.model_kwargs = model_kwargs
+                return create_react_agent(new_llm, all_tools)
+            else:
+                # If not ChatOpenAI, just proceed normally
+                return create_react_agent(llm, all_tools)
 
 
 def create_mcp_langgraph(

@@ -232,6 +232,18 @@ class MCPAgent(ConversableAgent):
         )
 
     # MCP Context Tool Implementations
+    def has_context(self, key: str) -> bool:
+        """
+        Check if a key exists in the agent's context.
+        
+        Args:
+            key: The key to check for existence
+            
+        Returns:
+            True if the key exists in the context, False otherwise
+        """
+        return key in self.context_store
+        
     def _mcp_context_get(self, key: str) -> Dict:
         """
         Get a context item by key.

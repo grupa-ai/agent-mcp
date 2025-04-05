@@ -5,9 +5,12 @@ description = "An AutoGen agent with Model Context Protocol capabilities"
 requires-python = ">=3.11"
 dependencies = [
     "autogen>=0.8.3",
+    "google-generativeai>=0.8.4",
     "langchain-core>=0.3.51",
+    "langchain-google-genai>=2.0.10",
     "langchain-openai>=0.3.12",
     "langgraph>=0.3.25",
     "openai>=1.68.2",
     "pyautogen>=0.8.3",
+    "trafilatura>=2.0.0",
 ]
