@@ -30,8 +30,8 @@ def get_llm():
     """Get the OpenAI LLM wrapper that implements the langchain interface."""
     from langchain_openai import ChatOpenAI
     
-    # Initialize with the newest model (gpt-4o) which was released after your knowledge cutoff
-    return ChatOpenAI(model="gpt-4o", temperature=0.7)
+    # Initialize with the newest model (gpt-4) which was released after your knowledge cutoff
+    return ChatOpenAI(model="gpt-4", temperature=0.7)
 
 
 class LangGraphAgentNetwork:

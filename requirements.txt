@@ -1,0 +1,9 @@
+autogen
+langchain
+openai
+fastapi
+uvicorn
+aiohttp
+sse-starlette
+duckduckgo-search
+python-dotenv

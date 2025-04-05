@@ -10,10 +10,9 @@ import os
 import json
 import uuid
 from typing import Dict, List, Any, Optional, cast, Callable
-
+import langgraph.graph
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.tools import tool
-import langgraph.graph
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
 from openai import OpenAI
@@ -30,8 +29,8 @@ def get_llm():
     """Get the OpenAI LLM wrapper that implements the langchain interface."""
     from langchain_openai import ChatOpenAI
     
-    # Initialize with the newest model (gpt-4o) which was released after your knowledge cutoff
-    return ChatOpenAI(model="gpt-4o", temperature=0.7)
+    # Initialize with the newest model (gpt-4) which was released after your knowledge cutoff
+    return ChatOpenAI(model="gpt-4", temperature=0.7)
 
 
 class LangGraphCollaborativeProject:

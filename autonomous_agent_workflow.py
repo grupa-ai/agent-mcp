@@ -35,7 +35,7 @@ class Agent:
             raise ValueError("OPENAI_API_KEY environment variable not set")
         
         self.llm = ChatOpenAI(
-            model="gpt-4o",
+            model="gpt-4",
             temperature=0.2,
             api_key=api_key,
             model_kwargs={"messages": [{"role": "system", "content": self.system_message}]}
