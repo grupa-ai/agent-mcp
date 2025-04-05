@@ -19,6 +19,22 @@ args = "MCPAgentTest"
 task = "workflow.run"
 args = "mcp_agent_test"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AgentNetwork"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "CollaborativeProject"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "MCPFeaturesDemo"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "LangGraphExample"
+
 [[workflows.workflow]]
 name = "MCPAgentTest"
 author = "agent"
@@ -46,6 +62,62 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python test_mcp_agent.py"
+
+[[workflows.workflow]]
+name = "AgentNetwork"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python agent_network_example.py"
+
+[[workflows.workflow]]
+name = "CollaborativeProject"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python collaborative_task_example.py"
+
+[[workflows.workflow]]
+name = "MCPFeaturesDemo"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python mcp_features_demo.py"
+
+[[workflows.workflow]]
+name = "LangGraphExample"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python langgraph_example.py"
 
 [deployment]
 run = ["sh", "-c", "pip install pyautogen && python test_mcp_agent.py"]
