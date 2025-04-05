@@ -1,88 +1,123 @@
-# MCPAgent for AutoGen
+# AgentMCP: Multi-Framework Agent Integration Platform
 
 ## Overview
 
-MCPAgent is a powerful extension to AutoGen's agent architecture that implements the Model Context Protocol (MCP). It enables seamless context sharing, standardized tool usage, and transparent interaction between agents and LLMs.
+AgentMCP is a revolutionary platform that enables seamless integration between different AI agent frameworks (Autogen, Langchain, CrewAI, and LangGraph). It implements the Model Context Protocol (MCP) to provide standardized communication, task orchestration, and context sharing between agents from different ecosystems.
 
-This implementation allows developers to easily create MCP-capable agents by simply inheriting from the MCPAgent class.
+The platform uses a flexible coordinator-worker architecture with HTTP/FastAPI for communication, allowing agents to work together regardless of their underlying framework.
 
 ## Features
 
-- **Transparent MCP Implementation**: Extends AutoGen's ConversableAgent with full MCP support
-- **Context Management**: Built-in tools for managing, accessing, and sharing context
-- **Tool Registration**: Easy registration of functions as MCP-compatible tools
-- **Agent Integration**: Register other agents as callable tools
-- **Multi-format Tool Calls**: Support for OpenAI function calls, explicit MCP calls, and natural language intent detection
-- **LLM Context Integration**: Automatic inclusion of relevant context in LLM prompts
-- **Minimal Configuration**: Simple inheritance pattern matching AutoGen's existing patterns
+### Core Features
+- **Multi-Framework Support**: Seamlessly integrate agents from:
+  - Autogen (Autonomous agents)
+  - Langchain (Chain-of-thought reasoning)
+  - CrewAI (Role-based collaboration)
+  - LangGraph (Workflow orchestration)
+
+### Architecture
+- **Coordinator-Worker Pattern**: Centralized task management with distributed execution
+- **FastAPI Integration**: Modern, high-performance HTTP communication
+- **Asynchronous Processing**: Non-blocking task execution and message handling
+- **Flexible Transport Layer**: Extensible communication protocols
+
+### Task Management
+- **Dependency Tracking**: Handle complex task dependencies
+- **Result Forwarding**: Automatic routing of task results
+- **Dynamic Task Assignment**: Intelligent task distribution
+- **Progress Monitoring**: Track task completion and status
+
+### Integration Features
+- **Framework Adapters**: Convert between framework-specific formats
+- **Context Sharing**: Share data between different agent types
+- **Tool Registration**: Register and share capabilities across frameworks
+- **Error Handling**: Robust error recovery and reporting
 
 ## Installation
 
 ```bash
-# First, install AutoGen if you haven't already
-pip install autogen
+# Clone the repository
+git clone https://github.com/yourusername/AgentMCP.git
+cd AgentMCP
 
-# Then, just include mcp_agent.py in your project
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Dependencies
+```
+autogen
+langchain
+langchain-openai
+crewai
+langgraph
+openai
+fastapi
+uvicorn
+aiohttp
+sse-starlette
+duckduckgo-search
+python-dotenv
 ```
 
 ## Quick Start
 
-### Creating a Basic MCP Agent
-
-```python
-from mcp_agent import MCPAgent
-
-# Create an MCP-enabled agent
-agent = MCPAgent(
-    name="MyMCPAgent",
-    system_message="You are an MCP-enabled assistant"
-)
-
-# Add context to the agent
-agent.update_context("user", {
-    "name": "Alice",
-    "preferences": {
-        "theme": "dark",
-        "language": "English"
-    }
-})
-
-# Test using an MCP tool directly
-result = agent.execute_tool("context_list")
-print(f"Available context: {result}")
+### 1. Set Up Environment
+```bash
+# Create .env file
+echo "OPENAI_API_KEY=your_api_key_here" > .env
 ```
 
-### Using MCPAgent with OpenAI
+### 2. Run Multi-Framework Example
 
 ```python
-import os
-from mcp_agent import MCPAgent
-
-# Configure LLM
-config = {
-    "config_list": [{"model": "gpt-3.5-turbo", "api_key": os.environ.get("OPENAI_API_KEY")}],
-}
-
-# Create an MCP-enabled agent with LLM capabilities
-assistant = MCPAgent(
-    name="Assistant",
-    system_message="You are an assistant that uses context to enhance responses.",
-    llm_config=config
-)
-
-# Add context to the assistant
-assistant.update_context("weather", {
-    "location": "New York",
-    "temperature": 72,
-    "conditions": "Sunny"
-})
-
-# Generate a response that uses the context
-response = assistant.generate_reply(
-    messages=[{"role": "user", "content": "What's the weather like today?"}]
-)
-print(f"Assistant: {response}")
+# Run the multi-framework example
+python multi_framework_example.py
 ```
+
+This example demonstrates:
+- Collaborative research task using multiple frameworks
+- Task dependency management
+- Inter-framework communication
+- Result aggregation and summarization
+
+## Architecture Overview
+
+### Components
+
+1. **Base Classes**
+   - `MCPAgent`: Core agent functionality
+   - `HTTPTransport`: Communication layer
+   - `HeterogeneousGroupChat`: Agent coordination
+
+2. **Framework Adapters**
+   - `CrewAIMCPAdapter`: CrewAI integration
+   - `LangchainMCPAdapter`: Langchain integration
+   - `LangGraphMCPAdapter`: LangGraph integration
+   - `EnhancedMCPAgent`: Extended Autogen integration
+
+3. **Task Management**
+   ```python
+   task = {
+       "task_id": "research_project",
+       "steps": [
+           {
+               "agent": "LangchainWorker",
+               "task_id": "research",
+               "description": "Research topic"
+           },
+           {
+               "agent": "CrewAIWorker",
+               "task_id": "analysis",
+               "depends_on": ["research"]
+           }
+       ]
+   }
+   ```
 
 ### Registering Custom Tools
 

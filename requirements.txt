@@ -1,5 +1,8 @@
 autogen
 langchain
+langchain-openai
+crewai
+langgraph
 openai
 fastapi
 uvicorn
