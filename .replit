@@ -59,6 +59,10 @@ args = "AutonomousResearch"
 task = "workflow.run"
 args = "DetailedAgentInteractions"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "AgentInteractionLogs"
+
 [[workflows.workflow]]
 name = "MCPAgentTest"
 author = "agent"
@@ -226,6 +230,20 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python show_agent_interactions.py"
+
+[[workflows.workflow]]
+name = "AgentInteractionLogs"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python run_agent_collaboration_with_logs.py"
 
 [deployment]
 run = ["sh", "-c", "pip install pyautogen && python test_mcp_agent.py"]

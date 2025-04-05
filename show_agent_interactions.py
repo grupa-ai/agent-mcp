@@ -1,171 +1,107 @@
 """
-Show Detailed Agent Interactions.
+Show Agent Interactions
 
-This script demonstrates agent interactions using the AutoGen-based implementation,
-showing all the detailed conversations between agents as they collaborate on a research topic.
+This script demonstrates a simplified version of agent interactions,
+making it clear how agents communicate with each other using MCP protocol
 """
 
 import os
-import json
 import time
-from typing import Dict, List, Any
-import random
-
-# Import the agent network implementation
 from agent_network_example import AgentNetwork
 
-def show_agent_interactions(topic: str):
-    """
-    Run a detailed agent interaction demonstration on a specific topic.
-    
-    This function will:
-    1. Initialize the agent network
-    2. Set the topic
-    3. Have each specialized agent contribute to the topic
-    4. Show the full interactions between agents
-    5. Produce a final output combining all contributions
-    
-    Args:
-        topic: The topic for agents to collaborate on
-    """
-    print(f"\n{'='*80}")
-    print(f"DETAILED AGENT INTERACTION DEMO: {topic}")
-    print(f"{'='*80}\n")
+# Enable verbose logging for all agent interactions
+os.environ["AUTOGEN_VERBOSE"] = "1"
+
+def main():
+    """Run a simplified agent interaction demo with clear visualization of messages."""
+    print("\n=== AGENT INTERACTIONS DEMONSTRATION ===\n")
     
     # Create the agent network
-    print("Initializing agent network...")
+    print("1. Creating agent network with specialized agents...")
     network = AgentNetwork()
-    network.create_network()  # Important: create the actual agents in the network
+    network.create_network()
+    print(f"   Network created with {len(network.agents)} agents:")
+    for agent_id, agent in network.agents.items():
+        print(f"   - {agent.name} ({agent_id})")
     
-    # Set the collaboration topic
-    print(f"\nSetting collaboration topic: {topic}")
+    # Set a topic for discussion
+    topic = "MCP and future of agentic work"
+    print(f"\n2. Setting collaboration topic: {topic}")
     network.set_topic(topic)
-    time.sleep(1)
     
-    # Phase 1: Initial Research
-    print(f"\n{'='*50}")
-    print(f"PHASE 1: INITIAL RESEARCH")
-    print(f"{'='*50}")
-    researcher_id = "researcher"
+    # STEP 1: Direct agent-to-agent communication
+    print("\n3. DEMONSTRATING DIRECT AGENT COMMUNICATION")
+    print("   Researcher -> Analyst")
+    print("   ----------------------------------------")
     
-    # Get researcher to investigate the topic with verbose output
-    research_question = f"What is {topic} and why is it important? Provide key concepts, definitions, and components. Please be thorough in your research."
-    print(f"\nMessage to Researcher: {research_question}\n")
-    research_findings = network.interact_with_agent_programmatically(researcher_id, research_question)
+    # Researcher discovers information
+    research_question = f"What is {topic} and why is it important? Provide key concepts."
+    print(f"   Question to researcher: {research_question}")
+    research_findings = network.interact_with_agent_programmatically("researcher", research_question)
+    print(f"   Researcher's response: '{research_findings[:100]}...'")
     
-    print(f"\n[RESEARCHER RESPONSE]\n{'-'*30}")
-    print(research_findings)
-    print(f"{'-'*30}")
-    
-    # Share this knowledge with the analyst
-    print(f"\nSharing research findings with the Analyst...")
+    # Researcher shares with analyst
+    print(f"\n   Sharing knowledge from Researcher to Analyst...")
     network.share_knowledge(
-        from_agent_id=researcher_id,
+        from_agent_id="researcher",
         to_agent_id="analyst",
-        knowledge_key="key_concepts",
+        knowledge_key="research_findings",
         knowledge_value=research_findings
     )
+    print(f"   ✓ Knowledge shared successfully")
     
-    # Phase 2: Analysis
-    print(f"\n{'='*50}")
-    print(f"PHASE 2: ANALYSIS")
-    print(f"{'='*50}")
-    analyst_id = "analyst"
+    # STEP 2: Tool-based communication
+    print("\n4. DEMONSTRATING TOOL-BASED COMMUNICATION")
+    print("   Analyst calls Planner as a tool")
+    print("   ----------------------------------------")
     
-    # Get analyst to evaluate with verbose output
-    analysis_question = f"Based on the research about {topic}, what are the key benefits, challenges, and potential applications? Provide a detailed analysis."
-    print(f"\nMessage to Analyst: {analysis_question}\n")
-    analysis = network.interact_with_agent_programmatically(analyst_id, analysis_question)
+    # Analyst uses the planner as a tool
+    analysis_request = f"Based on this research, create a short analysis of {topic} highlighting benefits and challenges."
+    print(f"   Request to analyst: {analysis_request}")
+    analyst_response = network.interact_with_agent_programmatically("analyst", analysis_request)
+    print(f"   Analyst's response (which includes calling the planner as a tool): '{analyst_response[:100]}...'")
     
-    print(f"\n[ANALYST RESPONSE]\n{'-'*30}")
-    print(analysis)
-    print(f"{'-'*30}")
+    # STEP 3: Multi-agent coordination
+    print("\n5. DEMONSTRATING MULTI-AGENT COORDINATION")
+    print("   Coordinator broadcasts to all agents")
+    print("   ----------------------------------------")
     
-    # Share this knowledge with the planner
-    print(f"\nSharing analysis with the Planner...")
-    network.share_knowledge(
-        from_agent_id=analyst_id,
-        to_agent_id="planner",
-        knowledge_key="analysis",
-        knowledge_value=analysis
-    )
+    # Coordinator broadcasts to all agents
+    coordinator_message = f"Team, I need everyone's input on {topic}. Please share your specialized perspectives."
+    print(f"   Broadcast message: {coordinator_message}")
+    network.broadcast_message("coordinator", coordinator_message)
+    print(f"   ✓ Message broadcast to all agents in the network")
     
-    # Phase 3: Planning
-    print(f"\n{'='*50}")
-    print(f"PHASE 3: PLANNING")
-    print(f"{'='*50}")
-    planner_id = "planner"
+    # STEP 4: Context sharing
+    print("\n6. DEMONSTRATING CONTEXT SHARING")
+    print("   Agents update and access shared context")
+    print("   ----------------------------------------")
     
-    # Get planner to develop approach with verbose output
-    planning_question = f"Based on the research and analysis about {topic}, create a detailed step-by-step implementation plan. Consider practical considerations and timeline."
-    print(f"\nMessage to Planner: {planning_question}\n")
-    plan = network.interact_with_agent_programmatically(planner_id, planning_question)
+    # Planner updates the shared workspace with a plan
+    planning_request = f"Create a simple implementation plan for {topic}"
+    print(f"   Request to planner: {planning_request}")
+    plan = network.interact_with_agent_programmatically("planner", planning_request)
+    print(f"   Planner's response: '{plan[:100]}...'")
     
-    print(f"\n[PLANNER RESPONSE]\n{'-'*30}")
-    print(plan)
-    print(f"{'-'*30}")
+    # Creative accesses the plan and builds upon it
+    creative_request = f"Based on the existing plan, suggest innovative extensions for {topic}"
+    print(f"   Request to creative: {creative_request}")
+    creative_response = network.interact_with_agent_programmatically("creative", creative_request)
+    print(f"   Creative's response (building on shared context): '{creative_response[:100]}...'")
     
-    # Share this knowledge with the creative agent
-    print(f"\nSharing implementation plan with the Creative agent...")
-    network.share_knowledge(
-        from_agent_id=planner_id,
-        to_agent_id="creative",
-        knowledge_key="implementation_plan",
-        knowledge_value=plan
-    )
-    
-    # Phase 4: Creative Ideas
-    print(f"\n{'='*50}")
-    print(f"PHASE 4: CREATIVE IDEAS")
-    print(f"{'='*50}")
-    creative_id = "creative"
-    
-    # Get creative to generate ideas with verbose output
-    creative_question = f"Based on the implementation plan for {topic}, what are some creative and innovative approaches or extensions we could consider? Think outside the box and provide detailed ideas."
-    print(f"\nMessage to Creative: {creative_question}\n")
-    creative_ideas = network.interact_with_agent_programmatically(creative_id, creative_question)
-    
-    print(f"\n[CREATIVE RESPONSE]\n{'-'*30}")
-    print(creative_ideas)
-    print(f"{'-'*30}")
-    
-    # Share these ideas with the coordinator
-    print(f"\nSharing creative ideas with the Coordinator...")
-    network.share_knowledge(
-        from_agent_id=creative_id,
-        to_agent_id="coordinator",
-        knowledge_key="creative_extensions",
-        knowledge_value=creative_ideas
-    )
-    
-    # Phase 5: Coordination and Synthesis
-    print(f"\n{'='*50}")
-    print(f"PHASE 5: COORDINATION AND SYNTHESIS")
-    print(f"{'='*50}")
-    coordinator_id = "coordinator"
-    
-    # Get coordinator to synthesize everything with verbose output
-    synthesis_question = f"Synthesize all the information shared about {topic} into a comprehensive summary including key concepts, analysis, implementation plan, and creative extensions. Provide a structured final report."
-    print(f"\nMessage to Coordinator: {synthesis_question}\n")
-    final_synthesis = network.interact_with_agent_programmatically(coordinator_id, synthesis_question)
-    
-    print(f"\n[COORDINATOR RESPONSE - FINAL SYNTHESIS]\n{'-'*30}")
-    print(final_synthesis)
-    print(f"{'-'*30}")
-    
-    # Present the final collaborative output
-    print(f"\n{'='*80}")
-    print(f"FINAL COLLABORATIVE OUTPUT ON: {topic}")
-    print(f"{'='*80}")
-    print(final_synthesis)
-    print(f"\n{'='*80}")
-    
-    # Share the final synthesis with all agents via broadcast
-    print(f"\nBroadcasting final synthesis to all agents...")
-    network.broadcast_message(coordinator_id, f"Final synthesis on {topic} is complete: {final_synthesis[:100]}...")
-    
-    print(f"\nDetailed agent interaction demo complete!")
+    # Show network context
+    print("\n=== AGENT NETWORK COLLABORATION SUMMARY ===")
+    print("During this demonstration:")
+    print("1. The Researcher investigated the topic and shared findings with the Analyst")
+    print("2. The Analyst evaluated the research, calling the Planner as a tool for help")
+    print("3. The Coordinator broadcast a message to all agents in the network")
+    print("4. The Planner created an implementation plan stored in shared context")
+    print("5. The Creative accessed the shared context to build upon the plan")
+    print("\nThis demonstrates how agents collaborate through:")
+    print("- Direct knowledge sharing (agent to agent)")
+    print("- Tool-based communication (using other agents as tools)")
+    print("- Broadcasting (one to many communication)")
+    print("- Context sharing (maintaining shared knowledge state)")
 
 if __name__ == "__main__":
-    # Run the interaction demo with our specific topic
-    show_agent_interactions("MCP and future of agentic work")
+    main()
