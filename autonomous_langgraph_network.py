@@ -298,7 +298,7 @@ or implement your plans.
         for agent_id, agent in self.agents.items():
             # Tool to list all available agents
             @tool("list_agents")
-            def list_agents(agent_id=agent_id):
+            def list_agents(agent_id: str = agent_id):
                 """List all agents in the network with their specialties."""
                 agents_info = {}
                 for aid, profile in self.agent_profiles.items():
@@ -310,7 +310,7 @@ or implement your plans.
             
             # Tool to suggest collaboration with specific agents
             @tool("suggest_collaboration")
-            def suggest_collaboration(task_description: str, agent_id=agent_id):
+            def suggest_collaboration(task_description: str, agent_id: str = agent_id):
                 """Suggest which agents would be appropriate to collaborate with on a specific task."""
                 # This is intentionally left for the agent to decide based on the task
                 return {
@@ -320,7 +320,7 @@ or implement your plans.
             
             # Tool to update the shared workspace
             @tool("workspace_update")
-            def workspace_update(section: str, key: str, value: Any, agent_id=agent_id):
+            def workspace_update(section: str, key: str, value: str, agent_id: str = agent_id):
                 """Update a section of the shared workspace."""
                 workspace_key = f"workspace_{section}"
                 
@@ -347,7 +347,7 @@ or implement your plans.
             
             # Tool to get data from the workspace
             @tool("workspace_get")
-            def workspace_get(section: str, key: Optional[str] = None, agent_id=agent_id):
+            def workspace_get(section: str, key: Optional[str] = None, agent_id: str = agent_id):
                 """Get data from the shared workspace."""
                 workspace_key = f"workspace_{section}"
                 
@@ -365,7 +365,7 @@ or implement your plans.
             
             # Tool to send a message to all agents
             @tool("broadcast_message")
-            def broadcast_message(message: str, agent_id=agent_id):
+            def broadcast_message(message: str, agent_id: str = agent_id):
                 """Broadcast a message to all agents in the network."""
                 self.add_message(from_agent=agent_id, message=message)
                 return {"status": "success", "message": "Message broadcasted to all agents"}

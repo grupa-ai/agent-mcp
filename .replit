@@ -71,7 +71,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "pip install pyautogen && python test_mcp_agent.py"
+args = "python test_mcp_agent.py"
 
 [[workflows.workflow]]
 name = "mcp_agent_test"
@@ -197,7 +197,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python simplified_autonomous_demo.py \"Running, lifestyle, and impact on longevity\""
+args = "python simplified_autonomous_demo.py \"MCP, Agents and the future of work\""
 
 [[workflows.workflow]]
 name = "DetailedAgentInteractions"
@@ -211,7 +211,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python autonomous_agent_workflow.py \"Running, lifestyle, and impact on longevity\""
+args = "python autonomous_agent_workflow.py \"MCP, Agents and the future of work\""
 
 [[workflows.workflow]]
 name = "AgentInteractionLogs"
@@ -228,4 +228,4 @@ task = "shell.exec"
 args = "python run_agent_collaboration_with_logs.py"
 
 [deployment]
-run = ["sh", "-c", "pip install pyautogen && python test_mcp_agent.py"]
+run = ["sh", "-c", "python test_mcp_agent.py"]

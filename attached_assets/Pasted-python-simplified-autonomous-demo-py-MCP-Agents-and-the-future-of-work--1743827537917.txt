@@ -1,0 +1,151 @@
+python simplified_autonomous_demo.py "MCP, Agents and the future of work"
+
+================================================================================
+SIMPLIFIED AUTONOMOUS AGENT COLLABORATION DEMO
+================================================================================
+
+Research topic: MCP, Agents and the future of work
+========================================
+Creating autonomous agent network...
+Autonomous agent network initialized successfully!
+
+Initial workspace state:
+
+==== Shared Workspace Contents ====
+
+Workspace created: 2025-04-05 04:31:34
+Description: Shared workspace for collaborative agent research and analysis
+Sections: research, analysis, ideas, plans, summary
+
+=== RESEARCH ===
+  No entries yet.
+
+=== ANALYSIS ===
+  No entries yet.
+
+=== IDEAS ===
+  No entries yet.
+
+=== PLANS ===
+  No entries yet.
+
+=== SUMMARY ===
+  No entries yet.
+
+
+Starting autonomous collaboration...
+
+Starting autonomous collaboration with 5 max steps...
+
+==== Starting Autonomous Collaborative Research on: MCP, Agents and the future of work ====
+
+Beginning collaborative research process...
+/home/runner/workspace/autonomous_langgraph_network.py:318: LangChainDeprecationWarning: The method `BaseTool.__call__` was deprecated in langchain-core 0.1.47 and will be removed in 1.0. Use :meth:`~invoke` instead.
+  "available_agents": list_agents()
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_google_genai/chat_models.py", line 178, in _chat_with_retry
+    return generation_method(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 835, in generate_content
+    response = rpc(
+               ^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/gapic_v1/method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 293, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 153, in retry_target
+    _retry_error_helper(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/retry/retry_base.py", line 212, in _retry_error_helper
+    raise final_exc from source_exc
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/retry/retry_unary.py", line 144, in retry_target
+    result = target()
+             ^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/google/api_core/grpc_helpers.py", line 78, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.InvalidArgument: 400 * GenerateContentRequest.tools[0].function_declarations[0].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[1].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[value].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[3].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[4].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/runner/workspace/simplified_autonomous_demo.py", line 74, in <module>
+    main()
+  File "/home/runner/workspace/simplified_autonomous_demo.py", line 63, in main
+    network.research_topic(topic, max_steps=5)
+  File "/home/runner/workspace/autonomous_langgraph_network.py", line 670, in research_topic
+    result = self.collaboration_graph.invoke({"messages": messages})
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2688, in invoke
+    for chunk in self.stream(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2340, in stream
+    for _ in runner.tick(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2688, in invoke
+    for chunk in self.stream(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2340, in stream
+    for _ in runner.tick(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langgraph/prebuilt/chat_agent_executor.py", line 745, in call_model
+    response = cast(AIMessage, model_runnable.invoke(state, config))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 3047, in invoke
+    input = context.run(step.invoke, input, config)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/runnables/base.py", line 5440, in invoke
+    return self.bound.invoke(
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 331, in invoke
+    self.generate_prompt(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 894, in generate_prompt
+    return self.generate(prompt_messages, stop=stop, callbacks=callbacks, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 719, in generate
+    self._generate_with_cache(
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_core/language_models/chat_models.py", line 960, in _generate_with_cache
+    result = self._generate(
+             ^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_google_genai/chat_models.py", line 961, in _generate
+    response: GenerateContentResponse = _chat_with_retry(
+                                        ^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_google_genai/chat_models.py", line 196, in _chat_with_retry
+    return _chat_with_retry(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/tenacity/__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/tenacity/__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/tenacity/__init__.py", line 378, in iter
+    result = action(retry_state)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/tenacity/__init__.py", line 400, in <lambda>
+    self._add_action_func(lambda rs: rs.outcome.result())
+                                     ^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/nix/store/clx0mcir7qw8zk36zbr4jra789g3knf6-python3-3.11.10/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/tenacity/__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/langchain_google_genai/chat_models.py", line 190, in _chat_with_retry
+    raise ChatGoogleGenerativeAIError(
+langchain_google_genai.chat_models.ChatGoogleGenerativeAIError: Invalid argument provided to Gemini: 400 * GenerateContentRequest.tools[0].function_declarations[0].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[1].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[value].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[2].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[3].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+* GenerateContentRequest.tools[0].function_declarations[4].parameters.properties[agent_id].type: must be specified when not using one_of, any_of or all_of fields
+
+During task with name 'agent' and id 'aa07130f-c54d-775f-7fd3-b4d003463172'
+During task with name 'planner' and id '945fb711-1d7c-d46e-f316-492e4faa916d'

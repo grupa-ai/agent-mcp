@@ -182,7 +182,7 @@ class MCPNode:
             """Get a context item by key."""
             return self._mcp_context_get(key)
             
-        def context_set(key: str, value: Any) -> Dict:
+        def context_set(key: str, value: str) -> Dict:
             """Set a context item with the given key and value."""
             return self._mcp_context_set(key, value)
             
@@ -246,12 +246,23 @@ class MCPNode:
                 if param.annotation != inspect.Parameter.empty:
                     try:
                         if hasattr(param.annotation, "__name__"):
-                            param_info["type"] = str(param.annotation.__name__)
+                            type_name = param.annotation.__name__
+                            if type_name in ["str", "string"]:
+                                param_info["type"] = "string"
+                            elif type_name in ["int", "integer", "float", "number"]:
+                                param_info["type"] = "number" 
+                            elif type_name in ["bool", "boolean"]:
+                                param_info["type"] = "boolean"
+                            else:
+                                param_info["type"] = "string"  # Default to string for other types
                         else:
-                            param_info["type"] = str(param.annotation)
+                            param_info["type"] = "string"  # Default to string for complex types
                     except Exception:
-                        # If we can't get the type, just skip it
-                        pass
+                        # If we can't get the type, use string as default for Gemini
+                        param_info["type"] = "string"
+                else:
+                    # If no annotation, add default type for Gemini compatibility
+                    param_info["type"] = "string"
                     
                 params.append(param_info)
         except (ValueError, TypeError):
@@ -284,10 +295,51 @@ class MCPNode:
         """
         # Instead of using the tool decorator which may vary between versions,
         # directly register the function with our metadata
+        
+        # Inspect function signature to build parameter info
+        params = []
+        try:
+            sig = inspect.signature(func)
+            
+            for param_name, param in sig.parameters.items():
+                if param_name == 'self':
+                    continue
+                    
+                param_info = {
+                    "name": param_name,
+                    "description": f"Parameter {param_name}",
+                    "required": param.default == inspect.Parameter.empty,
+                    "type": "string"  # Set a default type for Gemini compatibility
+                }
+                
+                # Add more specific type information if available
+                if param.annotation != inspect.Parameter.empty:
+                    try:
+                        if hasattr(param.annotation, "__name__"):
+                            type_name = param.annotation.__name__
+                            if type_name in ["str", "string"]:
+                                param_info["type"] = "string"
+                            elif type_name in ["int", "integer", "float", "number"]:
+                                param_info["type"] = "number" 
+                            elif type_name in ["bool", "boolean"]:
+                                param_info["type"] = "boolean"
+                            else:
+                                param_info["type"] = "string"  # Default to string for other types
+                        else:
+                            param_info["type"] = "string"  # Default to string for complex types
+                    except Exception:
+                        # If we can't get the type, use string as default for Gemini
+                        param_info["type"] = "string"
+                    
+                params.append(param_info)
+        except (ValueError, TypeError):
+            # If we can't inspect the signature, use an empty parameter list
+            pass
+        
         self.mcp_tools[name] = {
             "name": name,
             "description": description,
-            "parameters": [],  # We'll inspect these if needed
+            "parameters": params,
             "function": func,
         }
     
