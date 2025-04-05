@@ -45,10 +45,6 @@ args = "LangGraphCollaborativeTask"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "AgentCollaboration"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
 args = "AutonomousLangGraphNetwork"
 
 [[workflows.workflow.tasks]]
@@ -176,20 +172,6 @@ task = "shell.exec"
 args = "python langgraph_collaborative_task.py"
 
 [[workflows.workflow]]
-name = "AgentCollaboration"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python run_agent_collaboration_demo.py"
-
-[[workflows.workflow]]
 name = "AutonomousLangGraphNetwork"
 author = "agent"
 
@@ -215,7 +197,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python -c \"import sys; sys.path.append('.'); from autonomous_langgraph_network import AutonomousAgentNetwork; network = AutonomousAgentNetwork(); network.create_network(); print('=== Starting Research on MCP and future of agentic work ==='); network.research_topic('MCP and future of agentic work', max_steps=10)\""
+args = "python simplified_autonomous_demo.py \"Urban vertical farming\""
 
 [[workflows.workflow]]
 name = "DetailedAgentInteractions"
@@ -229,7 +211,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python show_agent_interactions.py"
+args = "python autonomous_agent_workflow.py \"MCP, Agents and the future of work\""
 
 [[workflows.workflow]]
 name = "AgentInteractionLogs"
