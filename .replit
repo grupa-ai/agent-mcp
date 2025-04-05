@@ -197,7 +197,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python simplified_autonomous_demo.py \"Urban vertical farming\""
+args = "python simplified_autonomous_demo.py \"Running, lifestyle, and impact on longevity\""
 
 [[workflows.workflow]]
 name = "DetailedAgentInteractions"
@@ -211,7 +211,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python autonomous_agent_workflow.py \"MCP, Agents and the future of work\""
+args = "python autonomous_agent_workflow.py \"Running, lifestyle, and impact on longevity\""
 
 [[workflows.workflow]]
 name = "AgentInteractionLogs"
