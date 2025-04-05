@@ -1,16 +1,49 @@
+"""
+Check Imports for MCPAgent Project.
+
+This script checks if all required dependencies for the MCPAgent project are available.
+"""
+
+import importlib
 import sys
-print(f"Python path: {sys.path}")
 
-try:
-    import autogen
-    print(f"autogen is installed (version: {autogen.__version__})")
-    print(f"Contains ConversableAgent? {'ConversableAgent' in dir(autogen)}")
-except ImportError:
-    print("autogen is not installed")
+def check_import(module_name, display_name=None):
+    """Check if a module can be imported and print the result."""
+    if display_name is None:
+        display_name = module_name
+        
+    try:
+        module = importlib.import_module(module_name)
+        version = getattr(module, "__version__", "unknown version")
+        print(f"✓ {display_name} is available (version: {version})")
+        return True
+    except ImportError as e:
+        print(f"✗ {display_name} is NOT available: {e}")
+        return False
 
-# Also check for other packages that might be needed
-try:
-    import openai
-    print(f"openai is installed (version: {openai.__version__})")
-except ImportError:
-    print("openai is not installed")
+def main():
+    """Check all required imports."""
+    print("=== Checking Required Dependencies ===\n")
+    
+    # Basic Python version check
+    python_version = ".".join(map(str, sys.version_info[:3]))
+    print(f"Python version: {python_version}")
+    
+    # Core dependencies
+    check_import("autogen", "AutoGen")
+    check_import("openai", "OpenAI API")
+    
+    # LangGraph dependencies
+    check_import("langchain_core", "LangChain Core")
+    check_import("langchain_openai", "LangChain OpenAI")
+    check_import("langgraph", "LangGraph")
+    
+    # Check our own modules
+    try:
+        import mcp_agent
+        print("✓ MCPAgent module is available")
+    except ImportError as e:
+        print(f"✗ MCPAgent module is NOT available: {e}")
+
+if __name__ == "__main__":
+    main()

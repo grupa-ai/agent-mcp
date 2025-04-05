@@ -55,7 +55,7 @@ class CollaborativeProject:
         """Create a team of specialized agents for the project."""
         # Create project manager
         self.agents["manager"] = MCPAgent(
-            name="Project Manager",
+            name="ProjectManager",  # Removed whitespace from the name
             system_message="""You are the Project Manager agent.
 You coordinate the work of the research team, assign tasks, track progress,
 and ensure everyone is working effectively. You have a clear view of the big picture
@@ -95,7 +95,7 @@ the shared workspace with your analysis. Focus on what the information means for
         
         # Create content specialist
         self.agents["content"] = MCPAgent(
-            name="Content Specialist",
+            name="ContentSpecialist",  # Removed whitespace from the name
             system_message="""You are the Content Specialist agent.
 You excel at crafting clear, compelling content based on research and analysis.
 Your role is to take the project's information and create well-structured deliverables

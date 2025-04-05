@@ -480,11 +480,8 @@ def create_mcp_langgraph(
     builder.set_entry_point("agent")
     
     # Add conditional edges
-    builder.add_conditional_edges(
-        "agent",
-        lambda state: state["agent"].get("next") or END,
-        {END: END}
-    )
+    # This simpler routing approach works better with the latest LangGraph
+    builder.add_edge("agent", END)
     
     # Add any needed tools as nodes
     tool_nodes = {}

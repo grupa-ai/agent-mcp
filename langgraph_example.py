@@ -138,87 +138,44 @@ class LangGraphExample:
                 "message": f"Notification sent: {message}"
             })
         
-        # Create MCP nodes
-        researcher = MCPNode(name="Researcher")
-        researcher.register_custom_tool(
+        # SIMPLIFIED APPROACH: Use a single MCP agent with all tools
+        # This avoids recursion issues in the graph
+        print("1. Creating a unified MCP agent with all tools")
+        agent = MCPReactAgent(
+            name="UnifiedAgent",
+            system_message="You are a helpful assistant that can research information and make recommendations."
+        )
+        
+        # Register all tools with the agent
+        agent.register_custom_tool(
             name="search_database", 
             description="Search a database for information",
             func=search_database
         )
         
-        # Register a tool node for search_database
-        search_tool_node = ToolNode(search_database)
-        
-        # Create the planner agent with MCP
-        planner = MCPReactAgent(
-            name="Planner",
-            system_message="You are a helpful assistant that creates plans based on user requests."
+        agent.register_custom_tool(
+            name="notify_user",
+            description="Send a notification to the user",
+            func=notify_user
         )
         
-        # Register the researcher as a tool for the planner
-        def call_researcher(query: str) -> str:
-            """Ask the researcher agent to find information."""
-            result = researcher.execute_tool("search_database", query=query)
-            researcher.update_context("last_search", {
-                "query": query,
-                "result": result
-            })
-            return result
-        
-        planner.register_custom_tool(
-            name="ask_researcher",
-            description="Ask the researcher to find information",
-            func=call_researcher
-        )
-        
-        # Create the coordinator agent that manages the workflow
-        coordinator = MCPReactAgent(
-            name="Coordinator",
-            system_message="You are a coordinator that manages the overall workflow."
-        )
-        
-        # Create a planner node with the MCP agent's tools
-        planner_agent = planner.create_agent(self.llm, [call_researcher])
-        
-        # Build the graph
+        # Create a simple graph with just one node
         builder = langgraph.graph.StateGraph(Dict)
         
-        # Add the nodes
-        builder.add_node("coordinator", coordinator.create_agent(self.llm))
-        builder.add_node("planner", planner_agent)
-        builder.add_node("search_database", search_tool_node)
-        builder.add_node("notify_user", ToolNode(notify_user))
-        
-        # Add edges
-        builder.add_edge("coordinator", "planner")
-        builder.add_edge("planner", "search_database")
-        builder.add_edge("search_database", "planner")
-        builder.add_edge("planner", "coordinator")
-        builder.add_edge("coordinator", "notify_user")
-        builder.add_edge("notify_user", "coordinator")
+        # Add the single node
+        builder.add_node("agent", agent.create_agent(self.llm))
         
         # Set entry point
-        builder.set_entry_point("coordinator")
+        builder.set_entry_point("agent")
         
-        # Add conditional edges for the coordinator
-        builder.add_conditional_edges(
-            "coordinator",
-            lambda state: state.get("next", "planner") if "next" in state else END,
-            {
-                "planner": "planner",
-                END: END
-            }
-        )
+        # Simple edge - just go to END after the agent responds
+        builder.add_edge("agent", END)
         
         # Compile the graph
         graph = builder.compile()
         
-        # Add shared context
-        print("1. Setting up shared context")
-        coordinator_mcp = coordinator
-        planner_mcp = planner
-        
-        # Add user preferences to both agents' context
+        # Add context to the agent
+        print("2. Setting up context")
         user_preferences = {
             "name": "Bob",
             "location": "San Francisco",
@@ -226,11 +183,10 @@ class LangGraphExample:
             "dietary_restrictions": ["vegetarian"]
         }
         
-        coordinator_mcp.update_context("user_preferences", user_preferences)
-        planner_mcp.update_context("user_preferences", user_preferences)
+        agent.update_context("user_preferences", user_preferences)
         
         # Run the graph
-        print("2. Running the multi-node graph with a user query")
+        print("3. Running the graph with a user query")
         initial_state = {
             "messages": [
                 HumanMessage(content="I'd like recommendations for activities today, including places to eat.")
@@ -247,15 +203,11 @@ class LangGraphExample:
         if last_ai_message:
             print(f"Final response: {last_ai_message.content}")
         
-        # Check context sharing
-        print("\n3. Verifying context was shared between nodes")
-        coordinator_context = coordinator_mcp.execute_tool("context_list")
-        planner_context = planner_mcp.execute_tool("context_list")
-        researcher_context = researcher.execute_tool("context_list")
+        # Check context 
+        print("\n4. Verifying context")
+        context = agent.execute_tool("context_list")
         
-        print(f"Coordinator context keys: {coordinator_context['keys']}")
-        print(f"Planner context keys: {planner_context['keys']}")
-        print(f"Researcher context keys: {researcher_context['keys']}")
+        print(f"Agent context keys: {context['keys']}")
         
         print("\nMulti-Node MCP LangGraph Example completed.")
 
