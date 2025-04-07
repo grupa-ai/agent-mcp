@@ -181,3 +181,9 @@ cython_debug/
 
 # Poetry
 poetry.lock
+
+# Firebase
+firebase-key.json
+.firebase/
+firebase-debug.log
+*-debug.log

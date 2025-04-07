@@ -18,9 +18,16 @@ class LangchainMCPAdapter(MCPAgent):
                  client_mode: bool = False,
                  langchain_agent: OpenAIFunctionsAgent = None,
                  agent_executor: AgentExecutor = None,
+                 system_message: str = "",
                  **kwargs):
-        super().__init__(name=name, **kwargs)
+        # Set default system message if none provided
+        if not system_message:
+            system_message = "I am a Langchain agent that can help with various tasks."
+            
+        # Initialize parent with system message
+        super().__init__(name=name, system_message=system_message, **kwargs)
         
+        # Set instance attributes
         self.transport = transport
         self.client_mode = client_mode
         self.langchain_agent = langchain_agent
@@ -106,9 +113,6 @@ class LangchainMCPAdapter(MCPAgent):
     
     def run(self):
         """Run the agent's main loop"""
-        if self.transport:
-            self.transport.start()
-            
         # Get the event loop
         loop = asyncio.get_event_loop()
         

@@ -15,6 +15,7 @@ from langchain_mcp_adapter import LangchainMCPAdapter
 from crewai_mcp_adapter import CrewAIMCPAdapter
 from langgraph_mcp_adapter import LangGraphMCPAdapter
 from heterogeneous_group_chat import HeterogeneousGroupChat
+import mcp_agent
 from mcp_transport import HTTPTransport
 
 # Standard imports for Langchain
@@ -142,8 +143,7 @@ async def main():
     # Create the group chat
     group = HeterogeneousGroupChat(
         name="ResearchTeam",
-        host="localhost",
-        base_port=8000
+        server_url="https://mcp-server-ixlfhxquwq-ew.a.run.app"
     )
     
     # Create and add the coordinator
@@ -166,27 +166,27 @@ async def main():
                 "agent": "LangchainWorker",
                 "task_id": "research",
                 "description": "Search for recent quantum computing breakthroughs in 2024",
-                "url": "http://localhost:8002"
+                "url": "https://mcp-server-ixlfhxquwq-ew.a.run.app"
             },
             {
                 "agent": "CrewAIWorker",
                 "task_id": "analysis",
                 "description": "Analyze the research findings and identify key trends and implications",
-                "url": "http://localhost:8001",
+                "url": "https://mcp-server-ixlfhxquwq-ew.a.run.app",
                 "depends_on": ["research"]
             },
             {
                 "agent": "AutogenWorker",
                 "task_id": "integration",
                 "description": "Integrate the research and analysis into a cohesive narrative",
-                "url": "http://localhost:8002",
+                "url": "https://mcp-server-ixlfhxquwq-ew.a.run.app",
                 "depends_on": ["analysis"]
             },
             {
                 "agent": "LangGraphWorker",
                 "task_id": "summary",
                 "description": "Create a final executive summary of all findings",
-                "url": "http://localhost:8001",
+                "url": "https://mcp-server-ixlfhxquwq-ew.a.run.app",
                 "depends_on": ["integration"]
             }
         ]

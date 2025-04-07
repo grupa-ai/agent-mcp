@@ -87,8 +87,7 @@ async def main():
     # Create the group chat
     group = HeterogeneousGroupChat(
         name="ResearchTeam",
-        host="localhost",
-        base_port=8000
+        host="https://localhost:8000"
     )
     
     # Create and add the coordinator

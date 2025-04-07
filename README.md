@@ -85,6 +85,50 @@ This example demonstrates:
 - Inter-framework communication
 - Result aggregation and summarization
 
+## Interacting with the Deployed Network Server
+
+Once the MCP Network Server is deployed (e.g., as a Firebase Function), you can interact with its API endpoints using standard HTTP requests. The base URL for the deployed function is: `https://mcp-server-ixlfhxquwq-ew.a.run.app`
+
+### Example: Registering an Agent (using curl)
+
+```bash
+# Replace <FUNCTION_URL> with your actual deployed URL if different
+FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
+
+curl -X POST "${FUNCTION_URL}/register" \
+-H "Content-Type: application/json" \
+-d '{
+  "agent_id": "my_new_agent_007",
+  "info": {
+    "type": "curl_tester",
+    "capabilities": ["test"]
+  }
+}'
+```
+This will return a JSON response with the agent's ID and a JWT token required for authenticated endpoints.
+
+### Example: Checking Server Root (using curl)
+
+```bash
+# Replace <FUNCTION_URL> with your actual deployed URL if different
+FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
+
+curl "${FUNCTION_URL}/"
+```
+This should return `{"message":"MCP Network Server is running!"}`.
+
+### Example: Listing Agents (using curl and a token)
+
+First, register an agent (see above) and get its token. Then:
+
+```bash
+# Replace <FUNCTION_URL> and <YOUR_JWT_TOKEN>
+FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
+TOKEN="<YOUR_JWT_TOKEN>" # Replace with the token from the /register response
+
+curl "${FUNCTION_URL}/agents" -H "Authorization: Bearer ${TOKEN}"
+```
+
 ## Architecture Overview
 
 ### Components

@@ -1,0 +1,11 @@
+# Ignore Python virtual environment
+functions/venv/
+
+# Ignore other common files
+*.pyc
+__pycache__/
+.DS_Store
+
+# Ignore Firebase cache/logs if any
+.firebase/
+firebase-debug.log

@@ -116,29 +116,42 @@ class EnhancedMCPAgent(MCPAgent):
         print(f"\n{self.name}: Received result for task {task_id}:")
         print(f"Result: {result}\n")
         
-        # If we're the coordinator, store the result and forward it
-        if self.server_mode:
-            print(f"Coordinator: Storing result for task {task_id}")
+        # If we're the coordinator, store the result and potentially forward it
+        if self.transport and self.transport.remote_url:
+            print(f"{self.name}: Storing result for task {task_id}")
             self.task_results[task_id] = result
             
-            # Check if this result should be forwarded to dependent tasks
+            # Check for dependent tasks
             if hasattr(self, 'task_dependencies'):
-                print(f"Coordinator: Task dependencies: {self.task_dependencies}")
+                print(f"{self.name}: Task dependencies: {self.task_dependencies}")
                 # Find tasks that depend on this one
                 for dep_task_id, dep_info in self.task_dependencies.items():
                     if task_id in dep_info.get("depends_on", []):
-                        print(f"Coordinator: Forwarding result from {task_id} to dependent task {dep_task_id}")
-                        # Forward the task with the previous result
-                        await self.transport.send_message(
-                            dep_info["url"],
-                            {
-                                "type": "task",
-                                "task_id": dep_task_id,
-                                "description": "Analyze and summarize the findings",
-                                "previous_result": result,
-                                "reply_to": "http://localhost:8000"
-                            }
-                        )
+                        # Check if all dependencies are met
+                        all_deps_met = True
+                        for dep_id in dep_info.get("depends_on", []):
+                            if dep_id not in self.task_results:
+                                all_deps_met = False
+                                break
+                        
+                        if all_deps_met:
+                            print(f"{self.name}: All dependencies met for {dep_task_id}, forwarding task")
+                            try:
+                                # Forward the task with all dependency results
+                                await self.transport.send_message(
+                                    f"{self.transport.remote_url}/message/{dep_info['agent']}",
+                                    {
+                                        "type": "task",
+                                        "task_id": dep_task_id,
+                                        "description": dep_info["description"],
+                                        "depends_on": dep_info["depends_on"],  # Include dependencies
+                                        "reply_to": self.transport.remote_url  # Send result back to coordinator
+                                    }
+                                )
+                            except Exception as e:
+                                print(f"{self.name}: Error forwarding task {dep_task_id}: {e}")
+                        else:
+                            print(f"{self.name}: Still waiting for other dependencies for {dep_task_id}")
         
         return {"status": "ok"}
         
@@ -158,10 +171,17 @@ class EnhancedMCPAgent(MCPAgent):
         """Process incoming messages from transport"""
         print(f"{self.name}: Starting message processor...")
         while True:
-            message = await self.transport.receive_message()
-            print(f"{self.name}: Processing message: {message}")
-            await self.handle_incoming_message(message)
-            
+            message, message_id = await self.transport.receive_message() # Get message and ID
+            print(f"{self.name}: Processing message ID: {message_id}, Content: {message}")
+            try:
+                await self.handle_incoming_message(message)
+                # Acknowledge only after successful handling
+                await self.transport.acknowledge_message(message_id)
+            except Exception as e:
+                print(f"{self.name}: Error handling message {message_id}: {e}")
+                # Decide if you want to retry or discard on error
+                # For now, we won't acknowledge, so it might be re-delivered
+
     async def process_tasks(self):
         """Process tasks from the queue"""
         print(f"{self.name}: Starting task processor...")
@@ -170,40 +190,67 @@ class EnhancedMCPAgent(MCPAgent):
                 task = await self.task_queue.get()
                 print(f"{self.name}: Processing task: {task}")
                 
+                # Get task description and task_id
+                task_desc = task.get("description", "")
+                task_id = task.get("task_id", "")
+                
+                if not task_desc or not task_id:
+                    print(f"{self.name}: Error: Task is missing description or task_id")
+                    continue
+
+                # Check if this task has dependencies
+                depends_on = task.get("depends_on", [])
+                if depends_on:
+                    # Wait for dependencies to complete
+                    all_deps_met = False
+                    while not all_deps_met:
+                        all_deps_met = True
+                        for dep_id in depends_on:
+                            if dep_id not in self.task_results:
+                                print(f"{self.name}: Waiting for dependency {dep_id}...")
+                                all_deps_met = False
+                                break
+                        if not all_deps_met:
+                            await asyncio.sleep(1)  # Wait before checking again
+                            continue
+                    
+                    # Add dependency results as context
+                    task_context = "\nBased on the following findings:\n"
+                    for dep_id in depends_on:
+                        task_context += f"\nFrom {dep_id}:\n{self.task_results[dep_id]}"
+                else:
+                    task_context = ""
+                
                 # Generate response using LLM if configured
                 if hasattr(self, 'llm_config') and self.llm_config:
-                    # Check for previous task results if this is a dependent task
-                    task_context = ""
-                    if "previous_result" in task:
-                        task_context = f"\nBased on the following findings:\n{task['previous_result']}\n"
-                        print(f"{self.name}: Using previous task result as context: {task_context}")
-                    
-                    # Get task description and task_id
-                    task_desc = task.get("description", "")
-                    task_id = task.get("task_id", "")
-                    
-                    if not task_desc or not task_id:
-                        print(f"{self.name}: Error: Task is missing description or task_id")
-                        continue
-                    
-                    response = self.generate_reply(
-                        messages=[{
-                            "role": "user",
-                            "content": f"Please help with this task: {task_desc}{task_context}"
-                        }]
-                    )
+                    print(f"{self.name}: Generating response for task {task_id}...")
+                    try:
+                        response = self.generate_reply(
+                            messages=[{
+                                "role": "user",
+                                "content": f"Please help with this task: {task_desc}{task_context}"
+                            }]
+                        )
+                        print(f"{self.name}: Generated response for task {task_id}: {response}")
+                    except Exception as e:
+                        print(f"{self.name}: Error generating response: {e}")
+                        response = f"Error generating response: {e}"
                     
                     # Send result back if there's a reply_to
                     if "reply_to" in task:
                         print(f"{self.name}: Sending result back to {task['reply_to']}")
-                        await self.transport.send_message(
-                            task["reply_to"],
-                            {
-                                "type": "task_result",
-                                "task_id": task_id,
-                                "result": response
-                            }
-                        )
+                        try:
+                            result = await self.transport.send_message(
+                                task["reply_to"],
+                                {
+                                    "type": "task_result",
+                                    "task_id": task_id,
+                                    "result": response
+                                }
+                            )
+                            print(f"{self.name}: Result sent successfully: {result}")
+                        except Exception as e:
+                            print(f"{self.name}: Error sending result: {e}")
                 
                 self.task_queue.task_done()
                 

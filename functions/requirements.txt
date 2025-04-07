@@ -1,1 +1,12 @@
-firebase_functions~=0.1.0
+firebase-functions==0.4.2 # Reverted back
+fastapi==0.104.1
+uvicorn>=0.15.0
+sse-starlette>=1.0.0
+firebase-admin>=6.0.1
+python-multipart==0.0.6
+python-dotenv==1.0.0
+google-cloud-firestore>=2.7.0
+aiohttp==3.9.1
+pyjwt>=2.3.0
+mangum>=0.17.0 # Added back
+duckduckgo-search==4.1.1
