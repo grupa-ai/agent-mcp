@@ -37,7 +37,9 @@ GEMINI_MODEL = "gemini-2.5-pro-preview-03-25"
 USE_MODEL_FALLBACK = True  # Enable model fallback when rate limits are hit
 
 # Set up Gemini API
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCMxLMEGYMn9HP7LD88KXt1SMAeVLUDeoo")
+GEMINI_API_KEY = os.environ.get("GOOGLE_GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GOOGLE_GEMINI_API_KEY environment variable not set")
 genai.configure(api_key=GEMINI_API_KEY)
 
 def get_llm(use_fallback=False):

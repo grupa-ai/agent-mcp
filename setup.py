@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="agent-mcp",
-    version="0.1.0",
+    version="0.1.1",
     author="Samuel Ekpe",
     description="A bridge agent to enable agents  with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)",
     long_description=long_description,

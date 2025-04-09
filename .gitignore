@@ -50,6 +50,14 @@ venv.bak/
 logs/
 log/
 
+# Firebase and Credentials
+firebase/firebase-key.json
+**/firebase-key.json
+*.json
+!package.json
+!firebase-key-template.json
+!tsconfig.json
+
 # OS generated files
 .DS_Store
 .DS_Store?

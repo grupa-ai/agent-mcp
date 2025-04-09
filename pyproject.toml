@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "A bridge agent to enable agents  with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)"
 authors = [{name = "Samuel Ekpe"}]
 readme = "README.md"
