@@ -17,17 +17,17 @@ class MyAgent:
 
 ## What is AgentMCP?
 
-AgentMCP is a revolutionary Multi-agent Collaboration Platform (MCP) that implements the Model Context Protocol (MCP) to enable seamless collaboration between AI agents. With a single decorator, developers can transform any agent into an MCP-compatible agent that can participate in the Multi-agent Collaboration Network (MCN).
+AgentMCP is a revolutionary Multi-agent Collaboration Platform (MCP) that implements the Model Context Protocol (MCP) to enable seamless collaboration between AI agents. With a single decorator, developers can transform any agent into an MCP-compatible agent that can participate in the Multi-Agent Collaboration Network (MACNet).
 
 ### 🎯 One Decorator = Infinite Possibilities
 
 When you add `@mcp_agent`, your agent instantly becomes:
-- 🌐 Connected to the Multi-agent Collaboration Network (MCN)
+- 🌐 Connected to the Multi-Agent Collaboration Network (MACNet)
 - 🤝 Ready to work with any other agent on the network
 - 🔌 Framework-agnostic (works with Langchain, CrewAI, Autogen, or any custom implementation)
 - 🧠 Empowered to communicate, share context, and collaborate with specialized agents globally
 
-No complex setup. No infrastructure headaches. Just one line of code to join the world's largest AI agent collaboration network!
+No complex setup. No infrastructure headaches. Just one line of code to join the world's first AI multi-agent collaboration network (MAC-Network)!
 
 ### 💡 It's Like Uber for AI Agents
 
@@ -145,7 +145,7 @@ class MyMLAgent:
     def predict(self, data):
         return self.model.predict(data)
 
-# Add one line to join the network
+# Add one line to join the MAC network
 @mcp_agent(name="MLPredictor")
 class NetworkEnabledMLAgent(MyMLAgent):
     pass  # That's it! All methods become available to other agents
@@ -167,7 +167,7 @@ results = await my_agent.collaborate({
 
 ## 🔗 Network API
 
-### 🌐 Global Agent Network
+### 🌐 Global Agent Network (Multi-Agent Collaboration Network aka MAC Network or MacNet)
 
 Your agent automatically joins our hosted network at `https://mcp-server-ixlfhxquwq-ew.a.run.app`
 
@@ -213,7 +213,7 @@ All of this happens automatically when you use the `@mcp_agent` decorator!
 
 ## 🏛 Architecture
 
-### 🌐 The Network
+### 🌐 The MAC Network
 
 ```mermaid
 graph TD
@@ -368,7 +368,7 @@ Run `python mcp_features_demo.py` to see a step-by-step demonstration of all MCP
 
 This is the best example to start with to understand the core capabilities of MCPAgent.
 
-### 2. Agent Network
+### 2. The Internet of AI Agents (Agent Network)
 
 Run `python agent_network_example.py` to start an interactive agent network example:
 - Simulates a social network of agents
