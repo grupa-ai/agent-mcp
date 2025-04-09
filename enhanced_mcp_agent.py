@@ -171,41 +171,46 @@ class EnhancedMCPAgent(MCPAgent):
             print(f"[DEBUG] {self.name}: Found dependent tasks for {task_id}")
             
             # Get tasks that depend on this one
-            dependent_tasks = self.task_dependencies[task_id]
+            dependent_task = self.task_dependencies[task_id]
             
             # Remove this task from dependencies
             del self.task_dependencies[task_id]
             
-            # Process each dependent task
-            for task in dependent_tasks:
-                # Check if all dependencies are met
-                dependencies = task.get("depends_on", [])
-                all_deps_met = True
+            # Process the dependent task
+            print(f"[DEBUG] {self.name}: Processing dependent task {dependent_task}")
+            # Ensure task_info is a dictionary
+            if not isinstance(dependent_task, dict):
+                print(f"[WARNING] {self.name}: Skipping invalid task_info (not a dictionary): {dependent_task}")
+                return
                 
+            # Check if all dependencies are met
+            dependencies = dependent_task.get("depends_on", [])
+            all_deps_met = True
+            
+            for dep in dependencies:
+                if dep not in self.task_results:
+                    all_deps_met = False
+                    break
+                    
+            if all_deps_met:
+                print(f"[DEBUG] {self.name}: All dependencies met for task {dependent_task['task_id']}")
+                # Forward task to agent
+                await self.assign_task(dependent_task["agent"], dependent_task)
+            else:
+                print(f"[DEBUG] {self.name}: Not all dependencies met for task {dependent_task['task_id']}")
+                # Re-add to dependencies
                 for dep in dependencies:
                     if dep not in self.task_results:
-                        all_deps_met = False
-                        break
-                        
-                if all_deps_met:
-                    print(f"[DEBUG] {self.name}: All dependencies met for task {task['task_id']}")
-                    # Forward task to agent
-                    await self.assign_task(task["agent"], task)
-                else:
-                    print(f"[DEBUG] {self.name}: Not all dependencies met for task {task['task_id']}")
-                    # Re-add to dependencies
-                    for dep in dependencies:
-                        if dep not in self.task_results:
-                            if dep not in self.task_dependencies:
-                                self.task_dependencies[dep] = []
-                            # Create proper task info dictionary
-                            task_info = {
-                                "task_id": task.get("task_id"),
-                                "agent": task.get("agent"),
-                                "description": task.get("description"),
-                                "depends_on": task.get("depends_on", [])
+                        if dep not in self.task_dependencies:
+                            self.task_dependencies[dep] = []
+                            # Validate and ensure task_info has all required fields
+                            validated_task_info = {
+                                "task_id": dependent_task.get("task_id"),
+                                "agent": dependent_task.get("agent"),
+                                "description": dependent_task.get("description"),
+                                "depends_on": dependent_task.get("depends_on", [])
                             }
-                            self.task_dependencies[dep].append(task_info)
+                            self.task_dependencies[dep].append(validated_task_info)
         
         # Acknowledge the task result if we have the original message ID
         if original_message_id and self.transport:
@@ -228,13 +233,18 @@ class EnhancedMCPAgent(MCPAgent):
         
     async def assign_task(self, target_url: str, task: Dict[str, Any]):
         """Assign a task to another agent"""
+        print(f"{self.name}: Assigning task {task} to {target_url}")
+
         message = {
             "type": "task",
             "task_id": task["task_id"],
             "description": task["description"],
-            "reply_to": task["reply_to"],
             "from": self.mcp_id
         }
+        
+        # Only include reply_to if it exists in the task
+        if "reply_to" in task:
+            message["reply_to"] = task["reply_to"]
         
         return await self.transport.send_message(target_url, message)
         
