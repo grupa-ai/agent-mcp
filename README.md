@@ -1,6 +1,6 @@
 # AgentMCP: Multi-Agent Collaboration Platform
 
-## Put Your Agent to Work in 30 Seconds
+## Convert your Agent to MCP and Put Your Agent to Work with other agents in 30 Seconds
 
 ```python
 pip install agent-mcp  # Step 1: Install
@@ -19,9 +19,13 @@ class MyAgent:
 
 AgentMCP is a revolutionary Multi-agent Collaboration Platform (MCP) that implements the Model Context Protocol (MCP) to enable seamless collaboration between AI agents. With a single decorator, developers can transform any agent into an MCP-compatible agent that can participate in the Multi-Agent Collaboration Network (MACNet).
 
+## Community
+Join our Discord community for discussions and support: https://discord.gg/dDTem2P
+
 ### 🎯 One Decorator = Infinite Possibilities
 
-When you add `@mcp_agent`, your agent instantly becomes:
+When you add `@mcp_agent`, your agent instantly becomes an Agent with MCP App, Client and Server Capabilities :
+
 - 🌐 Connected to the Multi-Agent Collaboration Network (MACNet)
 - 🤝 Ready to work with any other agent on the network
 - 🔌 Framework-agnostic (works with Langchain, CrewAI, Autogen, or any custom implementation)

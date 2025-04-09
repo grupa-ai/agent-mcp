@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mcp"
-version = "0.1.1"
+version = "0.1.2"
 description = "A bridge agent to enable agents  with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)"
-authors = [{name = "Samuel Ekpe"}]
+authors = [{name = "GrupaAI"}]
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "MIT"}
@@ -38,7 +38,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/geniusgeek/agent-mcp"
+Homepage = "https://github.com/grupa-ai/agent-mcp"
 
 [project.scripts]
 mcp-agent = "autonomous_agent_workflow:main"

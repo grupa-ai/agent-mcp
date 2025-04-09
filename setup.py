@@ -5,12 +5,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="agent-mcp",
-    version="0.1.1",
-    author="Samuel Ekpe",
+    version="0.1.2",
+    author="GrupaAI",
     description="A bridge agent to enable agents  with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/geniusgeek/agent-mcp",
+    url="https://github.com/grupa-ai/agent-mcp",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
