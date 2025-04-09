@@ -48,6 +48,7 @@ async def setup_langchain_agent():
     return agent, agent_executor
 
 async def main():
+    #the idea here is agent in a group working with each other regardless of the framework they were built on
     # Check for API key
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:

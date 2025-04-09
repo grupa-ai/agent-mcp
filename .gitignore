@@ -45,10 +45,31 @@ venv.bak/
 
 # Logs and Databases
 *.log
+**/output.log
+**/full_log.txt
 *.sqlite
 *.db
 logs/
 log/
+
+# Local Development
+.env
+.env.local
+.env.*.local
+
+# Firebase Cache
+.firebase/
+.firebaserc.local
+
+# Test Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Local Notes
+*.todo
+*.notes
+TODO.md
 
 # Firebase and Credentials
 firebase/firebase-key.json

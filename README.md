@@ -472,7 +472,7 @@ The project includes several advanced examples that demonstrate the full potenti
 
 ### 1. MCPFeaturesDemo
 
-Run `python mcp_features_demo.py` to see a step-by-step demonstration of all MCPAgent features:
+Run `python demos/mcp_features_demo.py` to see a step-by-step demonstration of all MCPAgent features:
 - Context management operations
 - Custom tool registration and usage
 - Using agents as tools
@@ -482,7 +482,7 @@ This is the best example to start with to understand the core capabilities of MC
 
 ### 2. The Internet of AI Agents (Agent Network)
 
-Run `python agent_network_example.py` to start an interactive agent network example:
+Run `python demos/agent_network_example.py` to start an interactive agent network example:
 - Simulates a social network of agents
 - Each agent has a specialized role (Coordinator, Researcher, Analyst, etc.)
 - Agents can communicate with each other through tool calls
@@ -493,7 +493,7 @@ This example demonstrates how MCPAgent enables creating complex agent networks w
 
 ### 3. Collaborative Project
 
-Run `python collaborative_task_example.py` to start a collaborative project simulation:
+Run `python demos/collaborative_task_example.py` to start a collaborative project simulation:
 - Team of agents working together on a shared project
 - Shared workspace context with research, analysis, and tasks
 - Task assignment and progress tracking
@@ -542,10 +542,10 @@ result = graph.invoke(initial_state)
 The project includes several examples that demonstrate how to use the MCP protocol with LangGraph:
 
 1. **Basic LangGraph Example**
-   Run `python langgraph_example.py` to see a step-by-step demonstration of MCPNode with LangGraph.
+   Run `python demos/langgraph_example.py` to see a step-by-step demonstration of MCPNode with LangGraph.
 
 2. **LangGraph Agent Network**
-   Run `python langgraph_agent_network.py` to start an interactive agent network built with LangGraph.
+   Run `python demos/langgraph_agent_network.py` to start an interactive agent network built with LangGraph.
 
 3. **LangGraph Collaborative Project**
-   Run `python langgraph_collaborative_task.py` to start a collaborative project simulation with LangGraph agents.
+   Run `python demos/langgraph_collaborative_task.py` to start a collaborative project simulation with LangGraph agents.
