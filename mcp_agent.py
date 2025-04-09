@@ -10,6 +10,12 @@ import json
 import uuid
 import inspect
 from typing import Any, Dict, List, Optional, Union, Callable, Tuple
+import logging
+import asyncio
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Import AutoGen
 from autogen import ConversableAgent, Agent
@@ -28,6 +34,7 @@ class MCPAgent(ConversableAgent):
         mcp_tools (Dict): Dictionary of MCP tools available to this agent
         mcp_id (str): Unique identifier for this MCP agent
         mcp_version (str): The MCP version implemented by this agent
+        completed_task_ids (set): Set of completed task IDs for idempotency
     """
 
     def __init__(
@@ -71,6 +78,7 @@ class MCPAgent(ConversableAgent):
         self.mcp_tools = {}
         self.mcp_id = str(uuid.uuid4())
         self.mcp_version = "0.1.0"  # MCP version implemented
+        self.completed_task_ids = set()  # Set of completed task IDs for idempotency
 
         # Register default MCP tools
         self._register_default_mcp_tools()
@@ -542,3 +550,39 @@ class MCPAgent(ConversableAgent):
         
         # Call the function directly without passing self again (it's already bound)
         return func(**kwargs)
+
+    def _should_process_message(self, message: Dict[str, Any]) -> bool:
+        """
+        Checks if a message with a task_id has already been completed.
+        
+        Args:
+            message: The message to check
+            
+        Returns:
+            True if the message should be processed, False otherwise
+        """
+        if message is None:
+            return True # Can't determine, assume process
+            
+        message_type = message.get('type')
+        task_id = message.get('task_id')
+
+        if message_type == 'task' and task_id:
+            if task_id in self.completed_task_ids:
+                logger.info(f"[{self.name}] Identified already completed task_id: {task_id}. Skipping processing.")
+                return False # Already completed, do not process
+        
+        return True # Not a task with a known completed ID, or not a task at all
+
+    def _mark_task_completed(self, task_id: Optional[str]):
+        """
+        Marks a task ID as completed.
+        
+        Args:
+            task_id: The task ID to mark as completed
+        """
+        if task_id:
+            logger.debug(f"[{self.name}] Marking task_id {task_id} as completed.")
+            self.completed_task_ids.add(task_id)
+        else:
+             logger.warning(f"[{self.name}] Attempted to mark task completed, but task_id was None.")

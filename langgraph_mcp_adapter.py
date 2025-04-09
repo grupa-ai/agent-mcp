@@ -102,16 +102,45 @@ class LangGraphMCPAdapter(MCPAgent):
         """Process incoming messages from the transport layer"""
         while True:
             try:
-                message = await self.transport.receive_message()
-                if message and "type" in message:
-                    if message["type"] == "task":
+                message, message_id = await self.transport.receive_message()
+                print(f"{self.name}: Received message {message_id}: {message}")
+                
+                if message and isinstance(message, dict):
+                    # Add message_id to message for tracking
+                    message['message_id'] = message_id # Ensure message_id is attached
+                    
+                    # --- Idempotency Check ---
+                    if not super()._should_process_message(message):
+                        # If skipped, acknowledge and continue to next message
+                        if message_id and self.transport:
+                            asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
+                            print(f"[{self.name}] Acknowledged duplicate task {message.get('task_id')} (msg_id: {message_id})")
+                        continue # Skip the rest of the loop for this message
+                    # --- End Idempotency Check ---
+                    
+                    if message.get("type") == "task":
+                        print(f"{self.name}: Queueing task with message_id {message_id}")
                         await self.task_queue.put(message)
                     elif self.custom_process_message:
                         await self.custom_process_message(self, message)
+                         # Note: Custom processing might need its own ack/idempotency logic
                     else:
-                        print(f"{self.name}: Unknown message type: {message['type']}")
+                        print(f"{self.name}: Unknown message type: {message.get('type')}")
+                        # Acknowledge unknown messages so they don't clog the queue
+                        if message_id and self.transport:
+                             await self.transport.acknowledge_message(self.name, message_id)
+                             print(f"{self.name}: Acknowledged unknown message {message_id}")
+
+                    # --- REMOVED Acknowledgement from here - Moved to process_tasks or skip logic ---
+                    # if message_id:
+                    #     await self.transport.acknowledge_message(self.name, message_id)
+                    #     print(f"{self.name}: Acknowledged message {message_id}")
+            except asyncio.CancelledError:
+                print(f"{self.name}: Message processor cancelled")
+                break
             except Exception as e:
                 print(f"{self.name}: Error processing message: {e}")
+                traceback.print_exc()
                 await asyncio.sleep(1)
                 
     async def process_tasks(self):
@@ -119,24 +148,62 @@ class LangGraphMCPAdapter(MCPAgent):
         while True:
             try:
                 task = await self.task_queue.get()
-                print(f"\n{self.name}: Processing task: {task['task']['description']}")
+                task_id = task.get('task', {}).get('task_id')
+                message_id = task.get('message_id')
                 
-                # Execute the task using the agent executor
-                result = await self.execute_task(task['task']['description'])
+                print(f"\n{self.name}: Processing task {task_id} with message_id {message_id}")
                 
-                # Send result back if reply_to is specified
-                if 'reply_to' in task:
-                    await self.transport.send_message(
-                        task['reply_to'],
-                        {
-                            "type": "task_result",
-                            "task_id": task['task']['task_id'],
-                            "result": result
-                        }
-                    )
+                try:
+                    # Execute the task using the agent executor
+                    result = await self.execute_task(task['task']['description'])
                     
+                    # --- Mark task completed (Uses Base Class Method) ---
+                    super()._mark_task_completed(task_id)
+                    # --- End mark task completed ---
+                    
+                    # Send result back if reply_to is specified
+                    if 'reply_to' in task:
+                        reply_url = task['reply_to']
+                        print(f"{self.name}: Sending result back to {reply_url}")
+                        await self.transport.send_message(
+                            reply_url,
+                            {
+                                "type": "task_result",
+                                "task_id": task_id,
+                                "result": result,
+                                "original_message_id": message_id  # Include original message ID
+                            }
+                        )
+                        print(f"{self.name}: Result sent successfully")
+                        
+                        # Acknowledge task completion
+                        if message_id:
+                            await self.transport.acknowledge_message(self.name, message_id)
+                            print(f"{self.name}: Task {task_id} acknowledged with message_id {message_id}")
+                        else:
+                            print(f"{self.name}: No message_id for task {task_id}, cannot acknowledge")
+                except Exception as e:
+                    print(f"{self.name}: Error executing task: {e}")
+                    traceback.print_exc()
+                    
+                    # Send error result back if reply_to is specified
+                    if 'reply_to' in task:
+                        await self.transport.send_message(
+                            task['reply_to'],
+                            {
+                                "type": "task_result",
+                                "task_id": task_id,
+                                "result": f"Error: {str(e)}",
+                                "original_message_id": message_id,
+                                "error": True
+                            }
+                        )
+                
+                self.task_queue.task_done()
+                
             except Exception as e:
                 print(f"{self.name}: Error processing task: {e}")
+                traceback.print_exc()
                 await asyncio.sleep(1)
                 
     async def execute_task(self, task_description: str) -> str:

@@ -7,6 +7,7 @@ import asyncio
 from enhanced_mcp_agent import EnhancedMCPAgent
 from langchain_mcp_adapter import LangchainMCPAdapter
 from heterogeneous_group_chat import HeterogeneousGroupChat
+import json
 
 # Langchain imports
 from langchain_openai import ChatOpenAI
@@ -59,8 +60,14 @@ async def main():
     )
     
     print("\n=== Creating Coordinator ===")
-    # Create coordinator
+    # Create and initialize coordinator
     coordinator = group.create_coordinator(api_key=api_key)
+    print(f"Coordinator created with name: {coordinator.name}")
+    
+    # Verify coordinator transport
+    if not coordinator.transport:
+        raise ValueError("Coordinator transport not initialized")
+    print(f"Coordinator transport initialized with URL: {coordinator.transport.get_url()}")
     
     print("\n=== Creating Agents ===")
     # Create an Autogen-based researcher
@@ -93,7 +100,23 @@ async def main():
     
     # Connect everyone to the deployed server
     print("\n=== Connecting to Deployed Server ===")
-    await group.connect()
+    try:
+        await group.connect()
+        print("Successfully connected to server")
+        
+        # Verify all agents are connected
+        for agent in group.agents:
+            if not agent.transport or not agent.transport.token:
+                raise ValueError(f"Agent {agent.name} not properly connected")
+            print(f"Agent {agent.name} connected with token: {agent.transport.token[:8]}...")
+            
+        # Verify coordinator connection
+        if not group.coordinator or not group.coordinator.transport.token:
+            raise ValueError("Coordinator not properly connected")
+        print(f"Coordinator connected with token: {group.coordinator.transport.token[:8]}...")
+    except Exception as e:
+        print(f"Error connecting to server: {e}")
+        raise
     
     # Define a collaborative task
     task = {
@@ -123,12 +146,26 @@ async def main():
     
     # Submit the task and wait for completion
     print("\n=== Submitting Task ===")
-    await group.submit_task(task)
+    print("***** REACHED POINT BEFORE group.submit_task *****", flush=True)
+    
+    # Verify task structure before submission
+    print(f"Task structure: {json.dumps(task, indent=2)}")
+    print(f"Active agents: {[agent.name for agent in group.agents]}")
+    
+    try:
+        await group.submit_task(task)
+        print("Task submitted successfully")
+    except Exception as e:
+        print(f"Error submitting task: {e}")
+        raise
     
     print("\n=== Waiting for Results ===")
     await group.wait_for_completion()
     
-    print("\n=== Task Complete ===")
+    print("\n=== Task Complete ===\n")
+    print("Shutting down agents...")
+    await group.shutdown()
+    print("All agents shut down successfully")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -40,6 +40,7 @@ class HeterogeneousGroupChat:
         self.coordinator_url = server_url
         self.agent_tokens: Dict[str, str] = {} # Store agent tokens
         self._register_event = asyncio.Event()
+        self._agent_tasks = [] # Initialize list to store agent tasks
         # Initialize directly on the group chat instance first
         self.task_results: Dict[str, Any] = {} 
         self.task_dependencies: Dict[str, Dict] = {}
@@ -155,50 +156,32 @@ class HeterogeneousGroupChat:
     add_agent = add_agents
         
     async def connect(self):
-        """Connect all agents to the deployed server"""
-        if not self.coordinator:
-            raise ValueError("No coordinator created. Call create_coordinator first.")
-            
-        print(f"\n=== Connecting {self.name} to {self.server_url} ===\n")
-        
-        # Register and start coordinator
+        """Register all agents and start their processing loops."""
         print("Registering coordinator...")
-        coord_response = await self.coordinator.transport.register_agent(self.coordinator)
-        
-        # Parse response which may be in {'body': '{...}'} format
-        if isinstance(coord_response, dict):
-            if 'body' in coord_response:
-                # Response is wrapped, parse the body string
-                try:
-                    coord_response = json.loads(coord_response['body'])
-                except json.JSONDecodeError:
-                    print(f"Error parsing coordinator registration response body: {coord_response}")
-                    
-        if coord_response and isinstance(coord_response, dict) and "token" in coord_response:
-            token = coord_response["token"]
-            self.agent_tokens[self.coordinator.name] = token
-            # Set the token for the coordinator's own transport (for sending messages AND receiving events)
-            self.coordinator.transport.token = token
-            print(f"Coordinator {self.coordinator.name} registered successfully")
-            # Start coordinator's event stream AFTER successful registration
-            self.coordinator.transport.start_event_stream()
-            # Start the coordinator's internal processing loops
-            self.coordinator.run()
-        else:
-            print(f"Warning: Coordinator {self.coordinator.name} registration failed or did not return a token. Response: {coord_response}")
-            # Potentially raise an error or handle this case more robustly
-            
+        coord_task = await self._register_and_start_agent(self.coordinator)
+        if not coord_task:
+             print("Coordinator registration failed. Aborting connect.")
+             return
+
         print("Registering agents...")
-        tasks = []
+        tasks = [coord_task] # Start with coordinator task
         for agent in self.agents:
-            tasks.append(self._register_and_start_agent(agent))
+            agent_task = await self._register_and_start_agent(agent)
+            if agent_task: # Only add task if registration was successful
+                tasks.append(agent_task)
+            else:
+                print(f"Skipping agent {agent.name} due to registration failure.")
+                # Optionally, handle failed agents (e.g., remove from group?)
+
+        if not tasks:
+            print("No agents were successfully registered and started.")
+            return
             
-        await asyncio.gather(*tasks)
-        
-        # Ensure all agents are registered before proceeding
-        self._register_event.set()
-        print("All agents registered and started successfully!")
-                
+        print(f"All {len(tasks)} agents registered and started.")
+        # Store tasks but don't wait for them - they'll run in the background
+        self._agent_tasks = tasks
+        print("Group chat ready for task submission.")
+
     async def _register_and_start_agent(self, agent: MCPAgent):
         """Register an agent, start its event stream, and its processors."""
         if not agent.transport or not isinstance(agent.transport, HTTPTransport):
@@ -216,22 +199,25 @@ class HeterogeneousGroupChat:
                     print(f"Error parsing agent registration response body: {response}")
                     
         if response and isinstance(response, dict) and "token" in response:
-             token = response["token"]
-             self.agent_tokens[agent.name] = token
-             # Set the token for the agent's transport (needed for event stream)
-             agent.transport.token = token 
-             print(f"Agent {agent.name} registered successfully with token.")
-             
-             # Now that we have the token, start the event stream connection
-             agent.transport.start_event_stream()
-             
-             # Start agent processors after registration and event stream start
-             agent.run() 
+            token = response["token"]
+            self.agent_tokens[agent.name] = token
+            agent.transport.token = token
+            agent.transport.auth_token = token
+            print(f"Agent {agent.name} registered successfully with token.")
+
+            # Start polling *before* starting the agent's run loop
+            await agent.transport.start_polling()
+            
+            # Start agent's main run loop (message processing, etc.)
+            # We create the task but don't await it here; the calling function (connect) will gather tasks.
+            task = asyncio.create_task(agent.run())
+            self._agent_tasks.append(task) # Store the task
+            return task # Return the task for potential gathering
         else:
-             print(f"Warning: Agent {agent.name} registration failed or did not return a token. Response: {response}")
-             # Decide if agent should still run or if this is a critical failure
-             # agent.run() # Maybe don't run if registration fails?
-             
+            print(f"Warning: Agent {agent.name} registration failed or did not return a token. Response: {response}")
+            # Don't run the agent if registration fails - it won't be able to communicate
+            return None # Indicate failure
+        
     async def submit_task(self, task: Dict[str, Any]):
         """
         Submit a task to the group chat.
@@ -239,41 +225,56 @@ class HeterogeneousGroupChat:
         Args:
             task: Task definition including steps and dependencies
         """
+        print(f"***** [{self.name}] ENTERING submit_task *****", flush=True) # Ensure entry is logged
         if not self.coordinator:
             raise ValueError("Group chat not connected. Call connect() first.")
             
+        self.task_results = {} # Reset results for new task submission
         print("\n=== Submitting task to group ===")
+
+        # Store task dependencies from the input task definition
+        # We need a dictionary where keys are the step task_ids
+        if isinstance(task, dict) and all(isinstance(v, dict) for v in task.values()):
+            # If task is already a dict mapping task_ids to task info
+            self.task_dependencies = task
+        else:
+            # If task has a steps list, convert it to a dict
+            self.task_dependencies = {step["task_id"]: step for step in task.get("steps", [])}
+        print(f"Parsed Step Dependencies: {self.task_dependencies}")
+
+        # Also store in coordinator instance if it exists
+        if self.coordinator:
+            # Ensure the coordinator has the dict initialized
+            if not hasattr(self.coordinator, 'task_dependencies') or not isinstance(getattr(self.coordinator, 'task_dependencies', None), dict):
+                self.coordinator.task_dependencies = {}
+            self.coordinator.task_dependencies.update(self.task_dependencies)
+
+        if not self.coordinator or not self.coordinator.transport:
+             print("CRITICAL ERROR: Coordinator is not initialized or has no transport. Cannot submit task.")
+             return
         
-        # Store task dependencies
-        self.task_dependencies = {}
-        for step in task["steps"]:
-            task_id = step["task_id"]
-            agent_name = step["agent"]
-            self.task_dependencies[task_id] = {
-                "agent": agent_name,
-                "description": step["description"],  # Store description
-                "depends_on": step.get("depends_on", [])
-            }
-            # Also store in coordinator instance
-            if self.coordinator:
-                self.coordinator.task_dependencies[task_id] = self.task_dependencies[task_id]
-            
-        print(f"Task dependencies: {self.task_dependencies}")
-        
-        # Assign tasks to agents
-        for step in task["steps"]:
-            agent_name = step["agent"]
+        coordinator_transport = self.coordinator.transport
+
+        print(f"[DEBUG - {self.name}] Starting submit_task loop over {len(self.task_dependencies)} dependencies.", flush=True)
+        print(f"***** [{self.name}] Dependencies Content: {self.task_dependencies} *****", flush=True) # Log content before loop
+
+        # Assign tasks to agents based on the structure
+        # Submit tasks to their respective agents
+        for task_id, task_info in self.task_dependencies.items():
+            print(f"[DEBUG - {self.name}] Loop Iteration: Processing task_id '{task_id}' for agent '{task_info['agent']}'", flush=True)
+            agent_name = task_info["agent"]
             agent_url = f"{self.server_url}/message/{agent_name}"
             message = {
                 "type": "task",
-                "task_id": step["task_id"],
-                "description": step["description"],
-                "depends_on": step.get("depends_on", []),  # Include dependencies
-                "reply_to": self.server_url  # Full server URL
+                "task_id": task_id,
+                "description": task_info["description"],
+                "depends_on": task_info.get("depends_on", []),  # Include dependencies
+                "reply_to": f"{self.server_url}/message/{self.coordinator.name}" # Full URL for reply
             }
             print(f"Sending task to {agent_name} at {agent_url}")
+            print(f"Task message: {message}")
             # Use coordinator's transport to send task to agent
-            await self.coordinator.transport.send_message(agent_url, message)
+            await coordinator_transport.send_message(agent_url, message)
             
         print("Task submitted. Waiting for completion...")
         
@@ -293,14 +294,18 @@ class HeterogeneousGroupChat:
                 all_completed = True
                 # Use the dependencies stored in the coordinator
                 for task_id in self.task_dependencies:
-                    if task_id not in self.task_results:
+                    # Check both group chat and coordinator results
+                    if task_id not in self.task_results and task_id not in self.coordinator.task_results:
                         all_completed = False
+                        print(f"Waiting for task {task_id}...")
                         break
                         
                 if all_completed:
                     print("\n=== All tasks completed! ===")
                     print("\nResults:")
-                    for task_id, result in self.task_results.items():
+                    # Merge results from both sources
+                    all_results = {**self.task_results, **self.coordinator.task_results}
+                    for task_id, result in all_results.items():
                         print(f"\n{task_id}:")
                         print(result)
                     break
@@ -316,7 +321,7 @@ class HeterogeneousGroupChat:
             print("[Coordinator Handler] Error: Coordinator not initialized.")
             return
             
-        print(f"[Coordinator {self.coordinator.name}] Received message: {message}")
+        print(f"\n[Coordinator {self.coordinator.name}] Received message: {message}")
         
         # Handle messages wrapped in 'body' field
         if isinstance(message, dict) and 'body' in message:
@@ -325,6 +330,7 @@ class HeterogeneousGroupChat:
                     message = json.loads(message['body'])
                 else:
                     message = message['body']
+                print(f"[Coordinator {self.coordinator.name}] Unwrapped message body: {message}")
             except json.JSONDecodeError:
                 print(f"[Coordinator {self.coordinator.name}] Error decoding message body: {message}")
                 return
@@ -333,26 +339,86 @@ class HeterogeneousGroupChat:
         msg_type = message.get("type")
         task_id = message.get("task_id")
         
-        if msg_type == "result":
+        print(f"[Coordinator {self.coordinator.name}] Processing message type '{msg_type}' for task {task_id}")
+        
+        if msg_type in ["result", "task_result"]:  # Handle both result types
             result_content = message.get("result") or message.get("description")  # Try both fields
             if task_id and result_content is not None:
                 print(f"[Coordinator {self.coordinator.name}] Storing result for task {task_id}")
-                # Store result in the group chat's dictionary
+                # Store result in both the group chat and coordinator
                 self.task_results[task_id] = result_content
-                # if self.coordinator:
-                #     self.coordinator.task_results[task_id] = result_content 
+                self.coordinator.task_results[task_id] = result_content
+                print(f"[Coordinator {self.coordinator.name}] Stored result: {result_content[:100]}...")
+                print(f"[Coordinator {self.coordinator.name}] Current task results: {list(self.task_results.keys())}")
+                print(f"[Coordinator {self.coordinator.name}] Current dependencies: {self.task_dependencies}")
+                
                 # Acknowledge the message
                 try:
-                    await self.coordinator.transport.acknowledge_message(message_id)
-                    print(f"[Coordinator {self.coordinator.name}] Acknowledged message {message_id}")
+                    if message_id:  # Only acknowledge if we have a message ID
+                        await self.coordinator.transport.acknowledge_message(self.coordinator.name, message_id)
+                        print(f"[Coordinator {self.coordinator.name}] Acknowledged message {message_id}")
                 except Exception as e:
                     print(f"[Coordinator {self.coordinator.name}] Error acknowledging message {message_id}: {e}")
             else:
                 print(f"[Coordinator {self.coordinator.name}] Received invalid result message (missing task_id or result): {message}")
+        elif msg_type == "get_result":  # Handle get result request
+            result = None
+            if task_id in self.task_results:
+                result = self.task_results[task_id]
+            elif task_id in self.coordinator.task_results:
+                result = self.coordinator.task_results[task_id]
+            
+            if result:
+                print(f"[Coordinator {self.coordinator.name}] Found result for task {task_id}")
+                # Send result back
+                try:
+                    await self.coordinator.transport.send_message(
+                        f"{self.server_url}/message/{message.get('sender', 'unknown')}",
+                        {
+                            "type": "task_result",
+                            "task_id": task_id,
+                            "result": result
+                        }
+                    )
+                    print(f"[Coordinator {self.coordinator.name}] Sent result for task {task_id}")
+                except Exception as e:
+                    print(f"[Coordinator {self.coordinator.name}] Error sending result: {e}")
+            else:
+                print(f"[Coordinator {self.coordinator.name}] No result found for task {task_id}")
         else:
             print(f"[Coordinator {self.coordinator.name}] Received unhandled message type '{msg_type}': {message}")
             # Optionally, acknowledge other messages too or handle errors
             try:
                 await self.coordinator.transport.acknowledge_message(message_id)
             except Exception as e:
-                 print(f"[Coordinator {self.coordinator.name}] Error acknowledging message {message_id}: {e}")
+                print(f"[Coordinator {self.coordinator.name}] Error acknowledging message {message_id}: {e}")
+
+    async def shutdown(self):
+        """Gracefully disconnect all agents and cancel their tasks."""
+        print(f"Initiating shutdown for {len(self._agent_tasks)} agent tasks...")
+
+        # 1. Cancel all running agent tasks
+        for task in self._agent_tasks:
+            if task and not task.done():
+                print(f"Cancelling task {task.get_name()}...")
+                task.cancel()
+            
+        # Wait for all tasks to be cancelled
+        if self._agent_tasks:
+            await asyncio.gather(*[t for t in self._agent_tasks if t], return_exceptions=True)
+            print("All agent tasks cancelled or finished.")
+        self._agent_tasks.clear() # Clear the list of tasks
+
+        # 2. Disconnect transports for all agents (coordinator + regular agents)
+        all_agents = [self.coordinator] + self.agents
+        disconnect_tasks = []
+        for agent in all_agents:
+             if hasattr(agent, 'transport') and hasattr(agent.transport, 'disconnect'):
+                 print(f"Disconnecting transport for {agent.name}...")
+                 disconnect_tasks.append(agent.transport.disconnect())
+             
+        if disconnect_tasks:
+            await asyncio.gather(*disconnect_tasks, return_exceptions=True)
+            print("All agent transports disconnected.")
+            
+        print("Shutdown complete.")
