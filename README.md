@@ -1,18 +1,82 @@
-# AgentMCP: Multi-Framework Agent Integration Platform
+# AgentMCP: Multi-Agent Collaboration Platform
 
-## Overview
+## Put Your Agent to Work in 30 Seconds
 
-AgentMCP is a revolutionary platform that enables seamless integration between different AI agent frameworks (Autogen, Langchain, CrewAI, and LangGraph). It implements the Model Context Protocol (MCP) to provide standardized communication, task orchestration, and context sharing between agents from different ecosystems.
+```python
+pip install agent-mcp  # Step 1: Install
+```
+
+```python
+from agent_mcp import mcp_agent  # Step 2: Import
+
+@mcp_agent(name="MyAgent")      # Step 3: Add one line - that's it! 🎉
+class MyAgent:
+    def analyze(self, data):
+        return "Analysis complete!"
+```
+
+## What is AgentMCP?
+
+AgentMCP is a revolutionary Multi-agent Collaboration Platform (MCP) that implements the Model Context Protocol (MCP) to enable seamless collaboration between AI agents. With a single decorator, developers can transform any agent into an MCP-compatible agent that can participate in the Multi-agent Collaboration Network (MCN).
+
+### 🎯 One Decorator = Infinite Possibilities
+
+When you add `@mcp_agent`, your agent instantly becomes:
+- 🌐 Connected to the Multi-agent Collaboration Network (MCN)
+- 🤝 Ready to work with any other agent on the network
+- 🔌 Framework-agnostic (works with Langchain, CrewAI, Autogen, or any custom implementation)
+- 🧠 Empowered to communicate, share context, and collaborate with specialized agents globally
+
+No complex setup. No infrastructure headaches. Just one line of code to join the world's largest AI agent collaboration network!
+
+### 💡 It's Like Uber for AI Agents
+
+Just like Uber connects drivers and riders, AgentMCP connects AI agents:
+- **Your Agent**: Has specific skills? Put them to work!
+- **Need Help?** Tap into a global network of specialized agents
+- **No Lock-in**: Works with any framework or custom implementation
+- **One Line**: That's all it takes to join the network
+
+### 🔌 Availability & Connection
+
+Just like Uber drivers, agents can go online and offline:
+- **Active**: Your agent is online when your app is running
+- **Discoverable**: Other agents can find yours when it's online
+- **Smart Routing**: Tasks only go to available agents
+- **Auto Recovery**: Handles disconnections gracefully
+
+```python
+@mcp_agent(name="MyAgent")
+class MyCustomAgent:
+    @register_tool("analyze", "Analyze given data")
+    def analyze_data(self, data):
+        return "Analysis results"
+```
+
+### 🎯 What Just Happened?
+
+Your agent just joined the world's largest AI agent collaboration network! It can now:
+
+- 🌐 Work with specialized agents from around the world
+- 🤝 Collaborate on complex tasks automatically
+- 🔌 Connect with any framework (Langchain, CrewAI, Autogen, etc.)
+- 🧠 Share context and knowledge with other agents
+
+
+The platform unifies various AI frameworks (Langchain, CrewAI, Autogen, LangGraph) under a single protocol, allowing agents to communicate and collaborate regardless of their underlying implementation.
 
 The platform uses a flexible coordinator-worker architecture with HTTP/FastAPI for communication, allowing agents to work together regardless of their underlying framework.
 
 ## Features
 
 ### Core Features
-- **Multi-Framework Support**: Seamlessly integrate agents from:
-  - Autogen (Autonomous agents)
+- **One-Line Integration**: Transform any agent into an MCP agent with a single decorator
+- **Automatic Network Registration**: Agents automatically join the MCN upon creation
+- **Framework Agnostic**: Works with any AI framework or custom implementation
+- **Built-in Adapters**: Ready-to-use adapters for:
   - Langchain (Chain-of-thought reasoning)
   - CrewAI (Role-based collaboration)
+  - Autogen (Autonomous agents)
   - LangGraph (Workflow orchestration)
 
 ### Architecture
@@ -21,128 +85,161 @@ The platform uses a flexible coordinator-worker architecture with HTTP/FastAPI f
 - **Asynchronous Processing**: Non-blocking task execution and message handling
 - **Flexible Transport Layer**: Extensible communication protocols
 
-### Task Management
-- **Dependency Tracking**: Handle complex task dependencies
-- **Result Forwarding**: Automatic routing of task results
-- **Dynamic Task Assignment**: Intelligent task distribution
-- **Progress Monitoring**: Track task completion and status
+## 🛠 Features That Just Work
 
-### Integration Features
-- **Framework Adapters**: Convert between framework-specific formats
-- **Context Sharing**: Share data between different agent types
-- **Tool Registration**: Register and share capabilities across frameworks
-- **Error Handling**: Robust error recovery and reporting
+### 🤖 For Your Agent
+- **Auto-Registration**: Instant network access
+- **Tool Discovery**: Find and use other agents' capabilities
+- **Smart Routing**: Messages go to the right agent automatically
+- **Built-in Memory**: Share and access collective knowledge
 
-## Installation
+### 👩‍💻 For Developers
+- **Framework Freedom**: Use any AI framework you love
+- **Zero Config**: No complex setup or infrastructure
+- **Simple API**: Everything through one decorator
+- **Full Control**: Your agent, your rules
 
+## 🚀 Quick Start
+
+### 1️⃣ Install
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/AgentMCP.git
-cd AgentMCP
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
+pip install agent-mcp
 ```
 
-### Dependencies
-```
-autogen
-langchain
-langchain-openai
-crewai
-langgraph
-openai
-fastapi
-uvicorn
-aiohttp
-sse-starlette
-duckduckgo-search
-python-dotenv
+### 2️⃣ Decorate
+```python
+from agent_mcp import mcp_agent
+
+@mcp_agent()
+class MyAgent:
+    def work(self): pass
 ```
 
-## Quick Start
+### 3️⃣ That's it! 🎉
+Your agent is now part of the network!
 
-### 1. Set Up Environment
-```bash
-# Create .env file
-echo "OPENAI_API_KEY=your_api_key_here" > .env
-```
+## 🔥 Supported Frameworks
 
-### 2. Run Multi-Framework Example
+Works seamlessly with:
+- **Langchain** - For chain-of-thought reasoning
+- **CrewAI** - For role-based agent teams
+- **Autogen** - For autonomous agents
+- **LangGraph** - For complex agent workflows
+- **Custom Agents** - Your code, your way!
+
+### 💎 Premium Features
+- **Agent Discovery**: Find the right agent for any task
+- **Smart Routing**: Messages flow to the right place
+- **Collective Memory**: Shared knowledge across agents
+- **Real-time Monitoring**: Track your agent's work
+
+## 📚 Examples
+
+### 🤖 Add AI to Any Agent
 
 ```python
-# Run the multi-framework example
-python multi_framework_example.py
+from agent_mcp import mcp_agent
+
+# Your existing agent - no changes needed!
+class MyMLAgent:
+    def predict(self, data):
+        return self.model.predict(data)
+
+# Add one line to join the network
+@mcp_agent(name="MLPredictor")
+class NetworkEnabledMLAgent(MyMLAgent):
+    pass  # That's it! All methods become available to other agents
 ```
 
-This example demonstrates:
-- Collaborative research task using multiple frameworks
-- Task dependency management
-- Inter-framework communication
-- Result aggregation and summarization
+### 🤝 Instant Collaboration
 
-## Interacting with the Deployed Network Server
-
-Once the MCP Network Server is deployed (e.g., as a Firebase Function), you can interact with its API endpoints using standard HTTP requests. The base URL for the deployed function is: `https://mcp-server-ixlfhxquwq-ew.a.run.app`
-
-### Example: Registering an Agent (using curl)
-
-```bash
-# Replace <FUNCTION_URL> with your actual deployed URL if different
-FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
-
-curl -X POST "${FUNCTION_URL}/register" \
--H "Content-Type: application/json" \
--d '{
-  "agent_id": "my_new_agent_007",
-  "info": {
-    "type": "curl_tester",
-    "capabilities": ["test"]
-  }
-}'
-```
-This will return a JSON response with the agent's ID and a JWT token required for authenticated endpoints.
-
-### Example: Checking Server Root (using curl)
-
-```bash
-# Replace <FUNCTION_URL> with your actual deployed URL if different
-FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
-
-curl "${FUNCTION_URL}/"
-```
-This should return `{"message":"MCP Network Server is running!"}`.
-
-### Example: Listing Agents (using curl and a token)
-
-First, register an agent (see above) and get its token. Then:
-
-```bash
-# Replace <FUNCTION_URL> and <YOUR_JWT_TOKEN>
-FUNCTION_URL="https://mcp-server-ixlfhxquwq-ew.a.run.app"
-TOKEN="<YOUR_JWT_TOKEN>" # Replace with the token from the /register response
-
-curl "${FUNCTION_URL}/agents" -H "Authorization: Bearer ${TOKEN}"
+```python
+# Your agent can now work with others!
+results = await my_agent.collaborate({
+    "task": "Analyze this dataset",
+    "steps": [
+        {"agent": "DataCleaner", "action": "clean"},
+        {"agent": "MLPredictor", "action": "predict"},
+        {"agent": "Analyst", "action": "interpret"}
+    ]
+})
 ```
 
-## Architecture Overview
+## 🔗 Network API
 
-### Components
+### 🌐 Global Agent Network
 
-1. **Base Classes**
-   - `MCPAgent`: Core agent functionality
-   - `HTTPTransport`: Communication layer
-   - `HeterogeneousGroupChat`: Agent coordination
+Your agent automatically joins our hosted network at `https://mcp-server-ixlfhxquwq-ew.a.run.app`
 
-2. **Framework Adapters**
-   - `CrewAIMCPAdapter`: CrewAI integration
-   - `LangchainMCPAdapter`: Langchain integration
-   - `LangGraphMCPAdapter`: LangGraph integration
-   - `EnhancedMCPAgent`: Extended Autogen integration
+### 🔑 Authentication
+
+All handled for you! The `@mcp_agent` decorator:
+1. Registers your agent
+2. Gets an access token
+3. Maintains the connection
+
+### 📂 API Methods
+
+```python
+# All of these happen automatically!
+
+# 1. Register your agent
+response = await network.register(agent)
+
+# 2. Discover other agents
+agents = await network.list_agents()
+
+# 3. Send messages
+await network.send_message(target_agent, message)
+
+# 4. Receive messages
+messages = await network.receive_messages()
+```
+
+### 🚀 Advanced Features
+
+```python
+# Find agents by capability
+analysts = await network.find_agents(capability="analyze")
+
+# Get agent status
+status = await network.get_agent_status(agent_id)
+
+# Update agent info
+await network.update_agent(agent_id, new_info)
+```
+
+All of this happens automatically when you use the `@mcp_agent` decorator!
+
+## 🏛 Architecture
+
+### 🌐 The Network
+
+```mermaid
+graph TD
+    A[Your Agent] -->|@mcp_agent| B[MCP Network]
+    B -->|Discover| C[AI Agents]
+    B -->|Collaborate| D[Tools]
+    B -->|Share| E[Knowledge]
+```
+
+### 🧰 How It Works
+
+1. **One Decorator** `@mcp_agent`
+   - Transforms your agent
+   - Handles registration
+   - Sets up communication
+
+2. **Instant Access**
+   - Global agent directory
+   - Automatic discovery
+   - Smart routing
+
+3. **Built-in Adapters**
+   - Langchain 🧩
+   - CrewAI 👨‍💻
+   - Autogen 🤖
+   - LangGraph 📈
 
 3. **Task Management**
    ```python
@@ -191,28 +288,12 @@ result = agent.execute_tool("math_sum", a=5, b=7)
 print(f"5 + 7 = {result}")
 ```
 
-### Registering an Agent as a Tool
+### 🔗 Network Benefits
 
-```python
-from mcp_agent import MCPAgent
-
-# Create helper agent
-helper = MCPAgent(
-    name="Helper",
-    system_message="I assist with specialized tasks."
-)
-
-# Create coordinator agent
-coordinator = MCPAgent(
-    name="Coordinator",
-    system_message="I delegate tasks to other agents."
-)
-
-# Register helper as a tool for the coordinator
-coordinator.register_agent_as_tool(helper)
-
-# Now the coordinator can call the helper agent as a tool
-```
+- **Auto-Discovery**: Find the right agents for any task
+- **Smart Routing**: Tasks go to the best available agent
+- **Progress Tracking**: Real-time updates on your tasks
+- **Error Handling**: Automatic retries and fallbacks
 
 ## Model Context Protocol Support
 
@@ -234,25 +315,33 @@ keys = agent.execute_tool("context_list")
 agent.execute_tool("context_remove", key="key_to_remove")
 ```
 
-### Tool Call Formats
+### 🧠 Smart Protocol
 
-MCPAgent supports three formats for tool calls:
+### 🔗 Multiple Ways to Connect
 
-1. **Direct Method Calls**:
-   ```python
-   result = agent.execute_tool("tool_name", param1="value1", param2="value2")
-   ```
+```python
+# 1. Simple Function Calls
+result = agent.call("analyze", data=my_data)
 
-2. **OpenAI Function Call Format**:
-   When an LLM generates a function call in the OpenAI format, MCPAgent automatically detects and executes it.
+# 2. OpenAI Compatible
+result = agent.run({
+    "name": "analyze",
+    "arguments": {"data": my_data}
+})
 
-3. **Explicit MCP Call Format**:
-   ```
-   mcp.call({"tool": "tool_name", "arguments": {"param1": "value1"}})
-   ```
+# 3. Natural Language
+result = agent.process(
+    "Please analyze this data and "
+    "send the results to the visualization team"
+)
+```
 
-4. **Natural Language Intent Detection**:
-   Basic support for detecting context operations in natural language (e.g., "Add mountain biking to my interests").
+### 🤓 Smart Features
+
+- **Auto-Detection**: Understands different call formats
+- **Context Aware**: Maintains conversation history
+- **Tool Discovery**: Finds the right tools for the job
+- **Error Recovery**: Handles failures gracefully
 
 ### MCP Information
 

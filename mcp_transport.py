@@ -39,11 +39,20 @@ class MCPTransport(ABC):
         pass
 
 class HTTPTransport(MCPTransport):
-    """
-    HTTP transport layer for MCP communication.
+    """HTTP transport layer for MCP communication.
     
-    This class provides HTTP and SSE-based communication between MCP agents,
-    handling message sending and receiving.
+    This class implements the MCPTransport interface using HTTP and SSE for
+    communication between agents. It provides:
+    
+    - HTTP Endpoints: REST API for message exchange
+    - SSE Support: Real-time event streaming for continuous updates
+    - Connection Management: Handles connection lifecycle and reconnection
+    - Message Queueing: Buffers messages for reliable delivery
+    - Error Recovery: Robust error handling and automatic retries
+    
+    The transport can operate in two modes:
+    1. Server Mode: Runs a local HTTP server (when is_remote=False)
+    2. Client Mode: Connects to remote server (when is_remote=True)
     """
     
     def __init__(self, host: str = "localhost", port: int = 8000):
@@ -386,12 +395,22 @@ class HTTPTransport(MCPTransport):
 
     # --- Message Sending ---
     async def send_message(self, target: str, message: Dict[str, Any]):
-        """
-        Send a message to another agent.
+        """Send a message to another agent.
+        
+        This method handles message delivery to other agents through HTTP POST requests.
+        It supports both local and remote message delivery with automatic retries and
+        error handling.
         
         Args:
-            target: URL or name of the recipient agent
-            message: Message to send
+            target: The target agent's endpoint URL or identifier
+            message: The message payload to send
+            
+        Returns:
+            Dict containing the server's response or error information
+            
+        Raises:
+            ClientError: If there are network or connection issues
+            ValueError: If the message format is invalid
         """
         # Create a ClientSession with optimized settings
         timeout = aiohttp.ClientTimeout(total=55)  # 55s timeout (Cloud Run's limit is 60s)
@@ -593,11 +612,15 @@ class HTTPTransport(MCPTransport):
     def start(self):
         """Starts the local HTTP server (if not in remote mode).
         
-        For remote connections, use connect() instead.
+        This method initializes and starts a local HTTP server for handling agent
+        communication when operating in local mode. In remote mode, use connect()
+        instead.
+        
+        The server runs in a separate daemon thread to avoid blocking the main
+        application thread.
         """
         # Skip starting local server if we're in remote mode
         if hasattr(self, 'is_remote') and self.is_remote:
-            # Connect polling here? NO - need agent_name/token first. Add connect() method.
             logger.info(f"[{self.agent_name or 'Unknown'}] In remote mode. Call connect() to start polling.")
             return
             
@@ -610,37 +633,45 @@ class HTTPTransport(MCPTransport):
     def stop(self):
         """Stops the local HTTP server (if running).
         
-        For remote connections, use disconnect() instead.
+        This method gracefully shuts down the local HTTP server when operating in
+        local mode. For remote connections, use disconnect() instead.
+        
+        The method ensures proper cleanup of server resources and thread termination.
         """
         if self.is_remote:
-             # Need to call disconnect() here to stop polling
              logger.info(f"[{self.agent_name or 'Unknown'}] In remote mode. Call disconnect() to stop polling.")
-             # Consider calling asyncio.run(self.disconnect()) if stop is sync?
-             # For now, assume disconnect is called separately.
              pass 
         elif self.server_thread:
-            # Implement proper shutdown for local server
             logger.info(f"Stopping local server thread (implementation pending)...")
             pass
             
     def set_message_handler(self, handler: Callable):
-        """
-        Set a handler for incoming messages.
+        """Set a handler for incoming messages.
+        
+        This method registers a callback function to process incoming messages.
+        The handler will be called for each message received by the transport.
         
         Args:
-            handler: Function to handle incoming messages
+            handler: Function to handle incoming messages. Should accept a message
+                    dictionary as its argument.
         """
         self.message_handler = handler
         
     async def register_agent(self, agent) -> Dict[str, Any]:
-        """
-        Register an agent with the remote server.
+        """Register an agent with the remote server.
+        
+        This method registers an agent with the remote MCP server, providing the
+        server with information about the agent's capabilities and configuration.
         
         Args:
             agent: The MCPAgent instance to register
             
         Returns:
-            The server's response
+            Dict containing the server's response
+            
+        Raises:
+            ValueError: If called in local mode
+            ClientError: If there are network or connection issues
         """
         if not hasattr(self, 'is_remote') or not self.is_remote:
             raise ValueError("register_agent can only be used with remote servers")

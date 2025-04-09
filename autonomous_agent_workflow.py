@@ -100,7 +100,12 @@ class AutonomousCollaboration:
         self.message_history = []
     
     def create_agents(self):
-        """Create the agent team."""
+        """Create the agent team.
+        
+        This method initializes a team of specialized agents with predefined roles
+        and system messages. Each agent is created with specific expertise and
+        personality traits to contribute effectively to the collaboration.
+        """
         self.agents = {
             "coordinator": Agent(
                 name="Coordinator",
@@ -144,7 +149,17 @@ class AutonomousCollaboration:
             print(f"- {agent.name} ({agent_id}): {agent.specialty}")
     
     def run_collaboration(self, topic: str, max_steps: int = 5):
-        """Run an autonomous collaboration on the given topic."""
+        """Run an autonomous collaboration on the given topic.
+        
+        Args:
+            topic: The subject matter for agents to collaborate on
+            max_steps: Maximum number of interaction steps (default: 5)
+            
+        This method orchestrates the autonomous collaboration process where agents
+        interact and build upon each other's contributions. Each agent decides
+        which team member should contribute next based on the conversation flow.
+        The process continues until max_steps is reached.
+        """
         print(f"\n{'='*80}")
         print(f"AUTONOMOUS COLLABORATION ON: {topic}")
         print(f"{'='*80}\n")
@@ -211,7 +226,13 @@ class AutonomousCollaboration:
         return self.message_history
 
 def main():
-    """Run the autonomous collaboration example."""
+    """Run the autonomous collaboration example.
+    
+    This function serves as the entry point for the script, setting up and
+    executing an autonomous collaboration session. It accepts an optional
+    command-line argument for the collaboration topic, defaulting to
+    'Sustainable urban development' if none is provided.
+    """
     # Get topic from command line argument or use default
     if len(sys.argv) > 1:
         topic = " ".join(sys.argv[1:])

@@ -4,6 +4,28 @@ MCPAgent - An AutoGen agent with Model Context Protocol capabilities.
 This module provides a transparent implementation of the Model Context Protocol
 for AutoGen agents, allowing them to standardize context provision to LLMs and
 interact with other MCP-capable systems with minimal configuration.
+
+The Model Context Protocol (MCP) is a standardized way for AI agents to share and
+manage context information. This implementation extends AutoGen's ConversableAgent
+to provide MCP capabilities including:
+
+- Context Management: Store and retrieve contextual information
+- Tool Registration: Register and manage MCP-compatible tools
+- Standardized Communication: Interact with other MCP agents seamlessly
+- Task Tracking: Track completed tasks for idempotency
+
+Example:
+    >>> agent = MCPAgent(name="my_agent")
+    >>> agent.register_mcp_tool(name="my_tool", description="Does something", func=my_func)
+    >>> agent.context_set("key", "value")
+    >>> context = agent.context_get("key")
+
+Attributes:
+    context_store (Dict): Central store for agent's contextual information
+    mcp_tools (Dict): Registry of MCP-compatible tools available to the agent
+    mcp_id (str): Unique identifier for this MCP agent instance
+    mcp_version (str): Version of MCP protocol implemented
+    completed_task_ids (set): Set of completed task IDs for idempotency
 """
 
 import json
@@ -381,12 +403,27 @@ class MCPAgent(ConversableAgent):
         )
         return reply
 
-    def _generate_context_summary(self) -> str:
+    def _mark_task_completed(self, task_id: Optional[str]) -> None:
+        """Mark a task as completed to prevent duplicate processing.
+        
+        This method is used for idempotency to ensure tasks are not processed multiple times.
+        The task ID is stored in a set for efficient lookup.
+        
+        Args:
+            task_id: The unique identifier of the task to mark as completed
         """
-        Generate a summary of available context for inclusion in the system message.
+        if task_id:
+            self.completed_task_ids.add(task_id)
+            logger.info(f"[{self.name}] Marked task_id {task_id} as completed")
+
+    def _generate_context_summary(self) -> str:
+        """Generate a summary of available context for inclusion in the system message.
+        
+        This method creates a human-readable summary of the current context store,
+        handling different types of values appropriately (dictionaries, lists, long strings).
         
         Returns:
-            String summary of available context
+            A formatted string containing a summary of all context items
         """
         if not self.context_store:
             return ""
@@ -406,16 +443,18 @@ class MCPAgent(ConversableAgent):
         return "\n".join(summary_parts)
 
     def _process_mcp_tool_calls(self, message: Dict) -> None:
-        """
-        Process any MCP tool calls in a message.
+        """Process any MCP tool calls in a message.
         
-        This function supports multiple tool call formats:
-        1. OpenAI function call format (if present in message)
+        This method handles multiple tool call formats:
+        1. OpenAI function call format
         2. Explicit MCP call format: mcp.call({...})
-        3. Natural language tool call detection (basic)
+        3. Natural language tool call detection
+        
+        The method executes tool calls and stores results in the context store
+        for future reference.
         
         Args:
-            message: The message to process for tool calls
+            message: The message containing potential tool calls
         """
         content = message.get("content", "")
         if not isinstance(content, str):

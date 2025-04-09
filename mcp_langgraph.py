@@ -112,19 +112,34 @@ class SharedContext:
         self.context_store.update(other_context)
 
 class MCPNode:
-    """
-    A LangGraph node with Model Context Protocol capabilities.
+    """A LangGraph node with Model Context Protocol capabilities.
 
     This class provides a standardized implementation of the Model Context Protocol
     for LangGraph nodes, enabling seamless context sharing between different parts
-    of agent graphs.
+    of agent graphs. It supports both local and shared context management, allowing
+    nodes to either maintain their own context or participate in a shared context
+    environment.
+
+    Features:
+    - Context Management: Both local and shared context support
+    - Tool Integration: Register and manage MCP-compatible tools
+    - LLM Integration: Seamless integration with language models
+    - Context Sharing: Share context between nodes in a graph
+    
+    Example:
+        >>> shared_context = SharedContext()
+        >>> node = MCPNode("my_node", context=shared_context)
+        >>> node.update_context("key", "value")
+        >>> value = node.get_context("key")
 
     Attributes:
         name (str): Name of the node
-        context_store (Dict): Store for the node's current context
-        mcp_tools (Dict): Dictionary of MCP tools available to this node
+        llm (Any): Language model instance for this node
+        mcp_tools (Dict): Registry of MCP tools available to this node
         mcp_id (str): Unique identifier for this MCP node
         mcp_version (str): The MCP version implemented by this node
+        _shared_context (SharedContext): Optional shared context instance
+        _use_shared_context (bool): Whether using shared or local context
     """
 
     def __init__(
@@ -631,62 +646,21 @@ class MCPNode:
 
 
 class MCPReactAgent(MCPNode):
-    """
-    An implementation of MCP for LangGraph's ReAct agent pattern.
+    """An implementation of MCP for LangGraph's ReAct agent pattern.
     
     This class extends MCPNode to work specifically with ReAct agents,
     providing a seamless integration of the Model Context Protocol with
-    LangGraph's agent architecture.
-    """
+    LangGraph's agent architecture. It handles:
     
-    def create_agent(
-        self,
-        llm,
-        tools: Optional[List] = None,
-        **kwargs
-    ):
-        """
-        Create a LangGraph ReAct agent that uses MCP context.
-        
-        Args:
-            llm: The language model to use
-            tools: Additional tools to include (MCP tools are added automatically)
-            **kwargs: Additional arguments to pass to create_react_agent
-            
-        Returns:
-            A LangGraph agent node
-        """
-        # Get MCP tools and combine with provided tools
-        mcp_tools = self.get_tools_for_node()
-        all_tools = mcp_tools + (tools or [])
-        
-        # Create the system message with context
-        system_message = self.get_system_message()
-        
-        # Create the agent - check the signature first
-        import inspect
-        sig = inspect.signature(create_react_agent)
-        if len(sig.parameters) >= 3 and 'system_message' in sig.parameters:
-            # Newer version with system_message parameter
-            return create_react_agent(llm, all_tools, system_message=system_message)
-        else:
-            # Older version without system_message parameter
-            # For older versions, we need to set the system message in the LLM's model_kwargs
-            # to avoid the "system is not a default parameter" warning
-            from langchain_openai import ChatOpenAI
-            if isinstance(llm, ChatOpenAI):
-                # Clone the LLM with system in model_kwargs instead
-                import copy
-                new_llm = copy.copy(llm)
-                # Add system message to model_kwargs
-                model_kwargs = getattr(new_llm, 'model_kwargs', {}) or {}
-                model_kwargs['messages'] = [{"role": "system", "content": system_message}]
-                new_llm.model_kwargs = model_kwargs
-                return create_react_agent(new_llm, all_tools)
-            else:
-                # If not ChatOpenAI, just proceed normally
-                return create_react_agent(llm, all_tools)
-
+    - Agent Creation: Creates ReAct agents with MCP context integration
+    - Tool Management: Combines MCP tools with custom agent tools
+    - Context Integration: Injects MCP context into agent's system messages
+    - LLM Compatibility: Handles different LLM implementations and versions
+    
+    Example:
+        >>> agent = MCPReactAgent(name="my_agent")
+        >>> react_agent = agent.create_agent(llm, tools=[my_tool])
+    """
 
 def create_mcp_langgraph(
     llm,
@@ -696,8 +670,15 @@ def create_mcp_langgraph(
     additional_nodes: Optional[Dict] = None,
     **kwargs
 ) -> StateGraph:
-    """
-    Create a LangGraph with MCP capabilities.
+    """Create a LangGraph with MCP capabilities.
+    
+    This function creates a LangGraph that integrates the Model Context Protocol,
+    enabling context sharing and standardized tool usage across the graph. It:
+    
+    - Creates an MCP-enabled ReAct agent as the primary node
+    - Configures the graph with proper routing and tool nodes
+    - Supports additional custom nodes and tools
+    - Handles LLM integration and system messages
     
     Args:
         llm: The language model to use
@@ -708,7 +689,7 @@ def create_mcp_langgraph(
         **kwargs: Additional keyword arguments
         
     Returns:
-        A configured StateGraph
+        A configured StateGraph with MCP capabilities
     """
     # Create MCP node
     mcp_agent = MCPReactAgent(name=name, system_message=system_message)

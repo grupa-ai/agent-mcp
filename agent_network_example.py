@@ -83,7 +83,12 @@ class AgentNetwork:
         self.current_topic = None
         
     def create_network(self):
-        """Create all agents in the network and connect them."""
+        """Create all agents in the network and connect them.
+        
+        This method initializes all agents defined in AGENT_PROFILES, creates a user proxy agent,
+        and establishes connections between agents based on their defined relationships.
+        Each agent is registered as a tool for its connected agents.
+        """
         # First create all agents
         for agent_id, profile in AGENT_PROFILES.items():
             agent = MCPAgent(
@@ -123,7 +128,14 @@ class AgentNetwork:
         print("\nAgent network created successfully!")
         
     def set_topic(self, topic):
-        """Set a topic for discussion in the network."""
+        """Set a topic for discussion in the network.
+        
+        Args:
+            topic: The topic to be discussed across the network.
+            
+        This method updates the context of all agents with the new topic
+        and its timestamp for synchronized discussions.
+        """
         self.current_topic = topic
         
         # Share the topic with all agents
@@ -136,7 +148,15 @@ class AgentNetwork:
         print(f"\nTopic set: {topic}")
     
     def interact_with_agent(self, agent_id):
-        """Allow the user to interact with a specific agent."""
+        """Allow the user to interact with a specific agent.
+        
+        Args:
+            agent_id: The identifier of the agent to interact with.
+            
+        This method enables direct conversation with a chosen agent,
+        supports topic-aware discussions, and allows switching between agents.
+        Type 'exit' to end conversation or 'switch:agent_id' to change agents.
+        """
         if agent_id not in self.agents:
             print(f"Agent '{agent_id}' not found. Available agents: {', '.join(self.agents.keys())}")
             return
@@ -181,7 +201,17 @@ class AgentNetwork:
             messages.append({"role": "assistant", "content": response})
     
     def share_knowledge(self, from_agent_id, to_agent_id, knowledge_key, knowledge_value):
-        """Share specific knowledge from one agent to another."""
+        """Share specific knowledge from one agent to another.
+        
+        Args:
+            from_agent_id: The source agent's identifier
+            to_agent_id: The target agent's identifier
+            knowledge_key: The key under which to store the knowledge
+            knowledge_value: The knowledge content to share
+            
+        This method enables direct knowledge transfer between agents
+        by updating the target agent's context with specified information.
+        """
         if from_agent_id not in self.agents or to_agent_id not in self.agents:
             print("One or both agent IDs are invalid.")
             return
@@ -196,7 +226,15 @@ class AgentNetwork:
         print(f"Shared knowledge '{knowledge_key}' from {from_agent.name} to {to_agent.name}")
     
     def broadcast_message(self, from_agent_id, message):
-        """Broadcast a message from one agent to all connected agents."""
+        """Broadcast a message from one agent to all connected agents.
+        
+        Args:
+            from_agent_id: The broadcasting agent's identifier
+            message: The message content to broadcast
+            
+        This method sends a message to all agents connected to the source agent,
+        storing it in their contexts with timestamp information.
+        """
         if from_agent_id not in self.agents:
             print(f"Agent '{from_agent_id}' not found.")
             return
@@ -221,7 +259,11 @@ class AgentNetwork:
                 print(f"Broadcast message from {from_agent.name} to {to_agent.name}")
     
     def list_agents(self):
-        """List all agents in the network with their specialties."""
+        """List all agents in the network with their specialties.
+        
+        This method prints a directory of all agents in the network,
+        showing their names, IDs, and specialties for easy reference.
+        """
         print("\n--- Agent Network Directory ---")
         for agent_id, agent in self.agents.items():
             profile = agent.get_context("profile")
@@ -229,7 +271,15 @@ class AgentNetwork:
             print(f"- {agent.name} ({agent_id}): {specialty}")
     
     def get_context(self, agent_id, key):
-        """Get a context value from an agent."""
+        """Get a context value from an agent.
+        
+        Args:
+            agent_id: The identifier of the agent
+            key: The context key to retrieve
+            
+        Returns:
+            The context value if found, None otherwise
+        """
         if agent_id not in self.agents:
             return None
         
