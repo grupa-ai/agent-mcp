@@ -13,7 +13,7 @@ from typing import Dict, List, Any, Optional
 from autogen import UserProxyAgent, AssistantAgent
 
 # Import MCPAgent from the mcp_agent module
-from mcp_agent import MCPAgent
+from agent_mcp.mcp_agent import MCPAgent
 
 
 def test_basic_mcp_functionality():

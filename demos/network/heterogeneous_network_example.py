@@ -6,9 +6,9 @@ import os
 import asyncio
 from typing import Dict, Any
 import openai
-from enhanced_mcp_agent import EnhancedMCPAgent
-from langchain_mcp_adapter import LangchainMCPAdapter
-from mcp_transport import HTTPTransport
+from agent_mcp.enhanced_mcp_agent import EnhancedMCPAgent
+from agent_mcp.langchain_mcp_adapter import LangchainMCPAdapter
+from agent_mcp.mcp_transport import HTTPTransport
 
 # Langchain imports
 from langchain_openai import ChatOpenAI

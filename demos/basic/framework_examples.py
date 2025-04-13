@@ -4,7 +4,7 @@ Example of using the @mcp_agent decorator with different frameworks.
 
 import os
 from dotenv import load_dotenv
-from mcp_decorator import mcp_agent
+from agent_mcp.mcp_decorator import mcp_agent
 
 # Load environment variables
 load_dotenv()

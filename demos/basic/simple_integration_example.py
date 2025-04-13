@@ -2,7 +2,8 @@
 Example demonstrating the simple one-line integration with AgentMCP.
 """
 
-from mcp_decorator import mcp_agent, register_tool
+from agent_mcp import mcp_agent
+from agent_mcp.mcp_decorator import register_tool
 
 # Example 1: Simple class-level integration
 @mcp_agent(name="SimpleAgent")
@@ -17,7 +18,7 @@ class MyAgent:
 # Example 2: More complex agent with custom tools
 @mcp_agent(
     name="CalculatorAgent",
-    system_message="I am a calculator agent that can perform basic math operations."
+    #system_message="I am a calculator agent that can perform basic math operations."
 )
 class CalculatorAgent:
     @register_tool("add", "Add two numbers")

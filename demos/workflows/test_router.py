@@ -5,7 +5,7 @@ This simpler test just creates a modified version of the research_topic function
 that prints the result of each invoke call to check the format of the returns.
 """
 
-from autonomous_langgraph_network import AutonomousAgentNetwork
+from demos.langgraph.autonomous_langgraph_network import AutonomousAgentNetwork
 from langchain_core.messages import HumanMessage, AIMessage
 
 def test_network():

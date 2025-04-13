@@ -18,7 +18,7 @@ from langgraph.prebuilt import ToolNode
 from openai import OpenAI
 
 # Import our MCP implementation for LangGraph
-from mcp_langgraph import MCPNode, MCPReactAgent, create_mcp_langgraph
+from agent_mcp.mcp_langgraph import MCPNode, MCPReactAgent, create_mcp_langgraph
 
 # Initialize OpenAI client
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")

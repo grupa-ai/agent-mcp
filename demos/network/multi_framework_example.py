@@ -10,13 +10,12 @@ import asyncio
 import openai
 from crewai import Agent as CrewAgent
 from langchain.tools import Tool
-from enhanced_mcp_agent import EnhancedMCPAgent
-from langchain_mcp_adapter import LangchainMCPAdapter
-from crewai_mcp_adapter import CrewAIMCPAdapter
-from langgraph_mcp_adapter import LangGraphMCPAdapter
-from heterogeneous_group_chat import HeterogeneousGroupChat
-import mcp_agent
-from mcp_transport import HTTPTransport
+from agent_mcp.enhanced_mcp_agent import EnhancedMCPAgent
+from agent_mcp.langchain_mcp_adapter import LangchainMCPAdapter
+from agent_mcp.crewai_mcp_adapter import CrewAIMCPAdapter
+from agent_mcp.langgraph_mcp_adapter import LangGraphMCPAdapter
+from agent_mcp.heterogeneous_group_chat import HeterogeneousGroupChat
+from agent_mcp.mcp_transport import HTTPTransport
 
 # Standard imports for Langchain
 from langchain_openai import ChatOpenAI

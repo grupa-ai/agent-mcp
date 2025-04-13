@@ -5,10 +5,10 @@ Example of using HeterogeneousGroupChat with different agent frameworks.
 import os
 import asyncio
 import openai
-from enhanced_mcp_agent import EnhancedMCPAgent
-from langchain_mcp_adapter import LangchainMCPAdapter
-from heterogeneous_group_chat import HeterogeneousGroupChat
-from mcp_transport import HTTPTransport
+from agent_mcp.enhanced_mcp_agent import EnhancedMCPAgent
+from agent_mcp.langchain_mcp_adapter import LangchainMCPAdapter
+from agent_mcp.heterogeneous_group_chat import HeterogeneousGroupChat
+from agent_mcp.mcp_transport import HTTPTransport
 
 # Langchain imports
 from langchain_openai import ChatOpenAI

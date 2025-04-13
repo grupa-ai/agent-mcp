@@ -23,7 +23,7 @@ from langgraph.prebuilt import ToolNode
 import openai
 
 # Import our MCP implementation for LangGraph
-from mcp_langgraph import MCPNode, SharedContext
+from agent_mcp.mcp_langgraph import MCPNode, SharedContext
 
 # Import Gemini support
 import google.generativeai as genai

@@ -22,13 +22,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 # Server URL
-server_url = os.getenv('MCP_SERVER_URL', 'https://mcp-server-ixlfhxquwq-ew.a.run.app')
-print(f"Using MCP Server: {server_url}")
+#server_url = os.getenv('MCP_SERVER_URL', 'https://mcp-server-ixlfhxquwq-ew.a.run.app')
+#print(f"Using MCP Server: {server_url}")
 
 # --- Agent Definitions ---
 
 # Autogen Agent with MCP
-@mcp_agent(mcp_id="AutoGen_Alice", mcp_server=server_url)
+@mcp_agent(mcp_id="AutoGen_Alice")
 class AutogenAgent(autogen.ConversableAgent):
     def __init__(self, name="AutoGen_Alice", **kwargs):
         llm_config = {
@@ -128,7 +128,7 @@ class ChatState(TypedDict):
     response: Optional[str]
     message_count: int
 
-@mcp_agent(mcp_id="LangGraph_Bob", mcp_server=server_url)
+@mcp_agent(mcp_id="LangGraph_Bob")
 class LangGraphAgent:
     """LangGraph-based agent with MCP integration"""
     def __init__(self, name: str):

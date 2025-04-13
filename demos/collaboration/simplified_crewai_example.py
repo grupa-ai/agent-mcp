@@ -4,7 +4,7 @@ Example of using the one-line MCP integration with CrewAI agents.
 
 import os
 from crewai import Agent as CrewAgent
-from mcp_decorator import mcp_agent
+from agent_mcp.mcp_decorator import mcp_agent
  
 
 from crewai import Task

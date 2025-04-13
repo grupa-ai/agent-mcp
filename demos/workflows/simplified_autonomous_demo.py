@@ -2,7 +2,7 @@
 Simplified autonomous agent collaboration demonstration
 """
 
-from autonomous_langgraph_network import AutonomousAgentNetwork
+from demos.langgraph.autonomous_langgraph_network import AutonomousAgentNetwork
 import sys
 import time
 

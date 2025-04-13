@@ -7,7 +7,7 @@ making it clear how agents communicate with each other using MCP protocol
 
 import os
 import time
-from agent_network_example import AgentNetwork
+from demos.network.agent_network_example import AgentNetwork
 
 # Enable verbose logging for all agent interactions
 os.environ["AUTOGEN_VERBOSE"] = "1"
