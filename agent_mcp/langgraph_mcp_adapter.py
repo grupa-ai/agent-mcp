@@ -107,34 +107,38 @@ class LangGraphMCPAdapter(MCPAgent):
                 
                 if message and isinstance(message, dict):
                     # Add message_id to message for tracking
-                    message['message_id'] = message_id # Ensure message_id is attached
+                    message['message_id'] = message_id
+                    
+                    # Standardize message structure
+                    if 'content' not in message and message.get('type') == 'task':
+                        message = {
+                            'type': 'task',
+                            'content': {
+                                'task_id': message.get('task_id'),
+                                'description': message.get('description'),
+                                'type': 'task'
+                            },
+                            'message_id': message_id,
+                            'from': message.get('from', 'unknown')
+                        }
                     
                     # --- Idempotency Check ---
                     if not super()._should_process_message(message):
-                        # If skipped, acknowledge and continue to next message
                         if message_id and self.transport:
                             asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
                             print(f"[{self.name}] Acknowledged duplicate task {message.get('task_id')} (msg_id: {message_id})")
-                        continue # Skip the rest of the loop for this message
-                    # --- End Idempotency Check ---
+                        continue
                     
-                    if message.get("type") == "task":
+                    if message.get('type') == 'task':
                         print(f"{self.name}: Queueing task with message_id {message_id}")
                         await self.task_queue.put(message)
                     elif self.custom_process_message:
                         await self.custom_process_message(self, message)
-                         # Note: Custom processing might need its own ack/idempotency logic
                     else:
                         print(f"{self.name}: Unknown message type: {message.get('type')}")
-                        # Acknowledge unknown messages so they don't clog the queue
                         if message_id and self.transport:
-                             await self.transport.acknowledge_message(self.name, message_id)
-                             print(f"{self.name}: Acknowledged unknown message {message_id}")
-
-                    # --- REMOVED Acknowledgement from here - Moved to process_tasks or skip logic ---
-                    # if message_id:
-                    #     await self.transport.acknowledge_message(self.name, message_id)
-                    #     print(f"{self.name}: Acknowledged message {message_id}")
+                            await self.transport.acknowledge_message(self.name, message_id)
+                            print(f"{self.name}: Acknowledged unknown message {message_id}")
             except asyncio.CancelledError:
                 print(f"{self.name}: Message processor cancelled")
                 break
@@ -148,14 +152,24 @@ class LangGraphMCPAdapter(MCPAgent):
         while True:
             try:
                 task = await self.task_queue.get()
-                task_id = task.get('task', {}).get('task_id')
+                
+                # Extract task details from content or root level
+                task_content = task.get('content', task.get('task', {}))
+                task_id = task_content.get('task_id')
+                task_description = task_content.get('description')
                 message_id = task.get('message_id')
+                reply_to = task.get('reply_to')
+                
+                if not task_id or not task_description:
+                    print(f"[ERROR] {self.name}: Task missing required fields: {task}")
+                    self.task_queue.task_done()
+                    continue
                 
                 print(f"\n{self.name}: Processing task {task_id} with message_id {message_id}")
                 
                 try:
                     # Execute the task using the agent executor
-                    result = await self.execute_task(task['task']['description'])
+                    result = await self.execute_task(task_description)
                     
                     # --- Mark task completed (Uses Base Class Method) ---
                     super()._mark_task_completed(task_id)
@@ -171,6 +185,7 @@ class LangGraphMCPAdapter(MCPAgent):
                                 "type": "task_result",
                                 "task_id": task_id,
                                 "result": result,
+                                "sender": self.name,
                                 "original_message_id": message_id  # Include original message ID
                             }
                         )
@@ -194,6 +209,7 @@ class LangGraphMCPAdapter(MCPAgent):
                                 "type": "task_result",
                                 "task_id": task_id,
                                 "result": f"Error: {str(e)}",
+                                "sender": self.name,
                                 "original_message_id": message_id,
                                 "error": True
                             }

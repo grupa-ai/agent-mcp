@@ -371,7 +371,8 @@ class EnhancedMCPAgent(MCPAgent):
                 # Get task description and task_id
                 task_desc = task.get("content", {}).get("description") if isinstance(task.get("content"), dict) else task.get("description", "")
                 task_id = task.get("content", {}).get("task_id") if isinstance(task.get("content"), dict) else task.get("task_id")
-                
+                message_id = task.get('message_id')
+
                 if not task_desc or not task_id:
                     print(f"{self.name}: Error: Task is missing description or task_id")
                     continue
@@ -391,8 +392,10 @@ class EnhancedMCPAgent(MCPAgent):
                                         f"{self.transport.remote_url}/message/{self.name}",
                                         {
                                             "type": "get_result",
-                                            "task_id": dep_id,
-                                            "sender": self.name
+                                            "task_id": dep_id, 
+                                            "result": "",
+                                            "sender": self.name,
+                                            "original_message_id": message_id,
                                         }
                                     )
                                     if result and result.get("result"):
@@ -445,7 +448,8 @@ class EnhancedMCPAgent(MCPAgent):
                                         "type": "task_result",
                                         "task_id": task_id,
                                         "result": response,
-                                        "sender": self.name
+                                        "sender": self.name,
+                                        "original_message_id": message_id
                                     }
                                 )
                                 print(f"{self.name}: Result sent successfully")
@@ -473,7 +477,8 @@ class EnhancedMCPAgent(MCPAgent):
                                     "type": "task_result",
                                     "task_id": task_id,
                                     "result": response,
-                                    "sender": self.name
+                                    "sender": self.name,
+                                    "original_message_id": message_id
                                 }
                             )
                             print(f"{self.name}: Result sent successfully: {result}")

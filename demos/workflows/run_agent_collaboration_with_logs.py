@@ -12,8 +12,8 @@ from typing import Dict, List, Any
 import pprint
 
 # Import the agent network implementation
-from agent_network_example import AgentNetwork
-from mcp_agent import MCPAgent  # Import the MCPAgent directly to access logs
+from demos.network.agent_network_example import AgentNetwork
+from agent_mcp.mcp_agent import MCPAgent  # Import the MCPAgent directly to access logs
 
 # Enable verbose logging for all tool calls
 os.environ["AUTOGEN_VERBOSE"] = "1"
