@@ -2,8 +2,8 @@
 Enhanced MCP Transport Layer with transaction support.
 """
 
-from mcp_transport import MCPTransport, HTTPTransport
-from mcp_transaction import MCPTransaction, MCPPayment
+from .mcp_transport import MCPTransport, HTTPTransport
+from .mcp_transaction import MCPTransaction, MCPPayment
 from typing import Dict, Any, Optional
 
 class TransactionalHTTPTransport(HTTPTransport):

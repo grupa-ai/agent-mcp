@@ -10,7 +10,7 @@ from firebase_admin import firestore
 import uvicorn
 import asyncio
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 #from google.cloud.firestore_v1.types.document import DocumentSnapshot
 #from google.cloud._helpers import _datetime_to_pb_timestamp
 from typing import Dict, Set, Any, Optional, Union
@@ -143,9 +143,8 @@ class MessageQueue:
     def push_message(self, target_id: str, message: dict):
         """Push a message to the target's queue"""
         try:
-            # Add timestamp if not present
-            if 'timestamp' not in message:
-                message['timestamp'] = firestore.SERVER_TIMESTAMP
+            # Always set timestamp to ensure consistency
+            message['timestamp'] = datetime.utcnow().replace(tzinfo=timezone.utc)
             
             # Add acknowledged flag
             message['acknowledged'] = False
@@ -179,8 +178,15 @@ class MessageQueue:
             # Only get unacknowledged messages
             query = query.where('acknowledged', '==', False)
             
-            # Order by timestamp ascending to get oldest first
-            query = query.order_by('timestamp', direction=firestore.Query.ASCENDING)
+            # Order by timestamp descending to get newest first
+            query = query.order_by('timestamp', direction=firestore.Query.DESCENDING)
+            
+            # Get current time in UTC
+            current_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+            cutoff_time = current_time - timedelta(minutes=1)  # Only get messages from last 1 minute
+            
+            # Add timestamp filter to only get recent messages
+            query = query.where('timestamp', '>', cutoff_time)
             
             # If we have a last_message_id, get the timestamp of that message
             if last_message_id:
@@ -243,7 +249,7 @@ class MessageQueue:
         try:
             # Use synchronous update
             doc_ref = self.messages_ref.document(target_id).collection('queue').document(message_id)
-            doc_ref.update({'acknowledged': True, 'acknowledged_at': firestore.SERVER_TIMESTAMP})
+            doc_ref.update({'acknowledged': True, 'acknowledged_at': datetime.utcnow().replace(tzinfo=timezone.utc)}) # doc_ref.update({'acknowledged': True, 'acknowledged_at': firestore.SERVER_TIMESTAMP})
             print(f"Acknowledged message {message_id} for {target_id}")
         except Exception as e:
             print(f"Error acknowledging message {message_id} for {target_id}: {e}")

@@ -4,8 +4,8 @@ Enhanced MCP Agent with client/server capabilities.
 
 import asyncio
 from typing import Optional, Dict, Any, List
-from mcp_agent import MCPAgent
-from mcp_transport import MCPTransport
+from .mcp_agent import MCPAgent
+from .mcp_transport import MCPTransport
 
 class EnhancedMCPAgent(MCPAgent):
     """MCPAgent with client/server capabilities"""
@@ -56,7 +56,13 @@ class EnhancedMCPAgent(MCPAgent):
             
     async def handle_incoming_message(self, message: Dict[str, Any]):
         """Handle incoming messages from other agents"""
+        # First check if type is directly in the message
         msg_type = message.get("type")
+        
+        # If not, check if it's inside the content field
+        if not msg_type and "content" in message and isinstance(message["content"], dict):
+            msg_type = message["content"].get("type")
+            
         print(f"[DEBUG] {self.name}: Received message of type: {msg_type}")
         
         if msg_type == "registration":
@@ -119,7 +125,7 @@ class EnhancedMCPAgent(MCPAgent):
             return {"status": "skipped", "message": "Task already completed"}
         # --- End Idempotency Check ---
         
-        task_id = message.get("task_id")
+        task_id = message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
         depends_on = message.get("depends_on", [])
         message_id = message.get("message_id")  # Get the message ID for acknowledgment
         
@@ -150,8 +156,22 @@ class EnhancedMCPAgent(MCPAgent):
         
     async def _handle_task_result(self, message: Dict[str, Any]):
         """Handle task result from an agent"""
-        task_id = message.get("task_id")
-        result = message.get("result")
+        content = message.get("content", {})
+        if isinstance(content, dict) and "text" in content:
+            # Handle case where content has a text field containing JSON
+            try:
+                import json
+                text_content = json.loads(content["text"])
+                task_id = text_content.get("task_id")
+                result = text_content.get("result")
+            except (json.JSONDecodeError, AttributeError) as e:
+                print(f"[ERROR] {self.name}: Failed to parse text content: {e}")
+                task_id = content.get("task_id")
+                result = content.get("result")
+        else:
+            # Normal case - extract directly from content or root
+            task_id = content.get("task_id") if isinstance(content, dict) else message.get("task_id")
+            result = content.get("result") if isinstance(content, dict) else message.get("result")
         original_message_id = message.get('id')
         sender_name = message.get('from', 'Unknown Sender') 
 
@@ -171,46 +191,74 @@ class EnhancedMCPAgent(MCPAgent):
             print(f"[DEBUG] {self.name}: Found dependent tasks for {task_id}")
             
             # Get tasks that depend on this one
-            dependent_task = self.task_dependencies[task_id]
+            dependent_tasks = self.task_dependencies[task_id]
+            if not isinstance(dependent_tasks, list):
+                dependent_tasks = [dependent_tasks]
             
             # Remove this task from dependencies
             del self.task_dependencies[task_id]
             
-            # Process the dependent task
-            print(f"[DEBUG] {self.name}: Processing dependent task {dependent_task}")
-            # Ensure task_info is a dictionary
-            if not isinstance(dependent_task, dict):
-                print(f"[WARNING] {self.name}: Skipping invalid task_info (not a dictionary): {dependent_task}")
-                return
+            # Process each dependent task
+            for dependent_task in dependent_tasks:
+                print(f"[DEBUG] {self.name}: Processing dependent task {dependent_task}")
+                # Ensure task_info is a dictionary
+                if not isinstance(dependent_task, dict):
+                    print(f"[WARNING] {self.name}: Skipping invalid task_info (not a dictionary): {dependent_task}")
+                    continue
                 
-            # Check if all dependencies are met
-            dependencies = dependent_task.get("depends_on", [])
-            all_deps_met = True
-            
-            for dep in dependencies:
-                if dep not in self.task_results:
-                    all_deps_met = False
-                    break
-                    
-            if all_deps_met:
-                print(f"[DEBUG] {self.name}: All dependencies met for task {dependent_task['task_id']}")
-                # Forward task to agent
-                await self.assign_task(dependent_task["agent"], dependent_task)
-            else:
-                print(f"[DEBUG] {self.name}: Not all dependencies met for task {dependent_task['task_id']}")
-                # Re-add to dependencies
+                # Check if all dependencies are met
+                dependencies = dependent_task.get("depends_on", [])
+                all_deps_met = True
+                
                 for dep in dependencies:
                     if dep not in self.task_results:
+                        all_deps_met = False
+                        # Re-add to dependencies since not all deps are met
                         if dep not in self.task_dependencies:
                             self.task_dependencies[dep] = []
-                            # Validate and ensure task_info has all required fields
-                            validated_task_info = {
-                                "task_id": dependent_task.get("task_id"),
-                                "agent": dependent_task.get("agent"),
-                                "description": dependent_task.get("description"),
-                                "depends_on": dependent_task.get("depends_on", [])
-                            }
-                            self.task_dependencies[dep].append(validated_task_info)
+                        self.task_dependencies[dep].append(dependent_task)
+                        break
+                
+                if all_deps_met:
+                    print(f"[DEBUG] {self.name}: All dependencies met for task {dependent_task.get('task_id')}")
+                    # Forward task to agent
+                    # Ensure task has proper structure
+                    task_to_assign = {
+                        "task_id": dependent_task.get("task_id"),
+                        "description": dependent_task.get("description"),
+                        "type": "task",
+                        "depends_on": dependencies
+                    }
+                    await self.assign_task(dependent_task["agent"], task_to_assign)
+                for dep in dependencies:
+                    if dep not in self.task_results:
+                        # Initialize list if this is first dependent task
+                        if dep not in self.task_dependencies:
+                            self.task_dependencies[dep] = []
+                            
+                        # Extract fields from content if present
+                        content = dependent_task.get("content", {})
+                        task_id = content.get("task_id") or dependent_task.get("task_id")
+                        description = content.get("description") or dependent_task.get("description")
+                        depends_on = content.get("depends_on") or dependent_task.get("depends_on", [])
+                        agent = dependent_task.get("agent")
+                        
+                        if not task_id or not agent or not description:
+                            print(f"[ERROR] {self.name}: Missing required fields in dependent task: {dependent_task}")
+                            continue
+                            
+                        # Maintain consistent message structure
+                        validated_task_info = {
+                            "type": "task",
+                            "content": {
+                                "task_id": task_id,
+                                "description": description,
+                                "depends_on": depends_on,
+                                "type": "task"
+                            },
+                            "agent": agent
+                        }
+                        self.task_dependencies[dep].append(validated_task_info)
         
         # Acknowledge the task result if we have the original message ID
         if original_message_id and self.transport:
@@ -235,16 +283,32 @@ class EnhancedMCPAgent(MCPAgent):
         """Assign a task to another agent"""
         print(f"{self.name}: Assigning task {task} to {target_url}")
 
+        # Extract task details from either content or root level
+        task_id = task.get("task_id")
+        description = task.get("description")
+        depends_on = task.get("depends_on", [])
+        
+        # If task details are in content, use those instead
+        if "content" in task and isinstance(task["content"], dict):
+            content = task["content"]
+            task_id = content.get("task_id", task_id)
+            description = content.get("description", description)
+            depends_on = content.get("depends_on", depends_on)
+
         message = {
             "type": "task",
-            "task_id": task["task_id"],
-            "description": task["description"],
+            "content": {
+                "task_id": task_id,
+                "description": description,
+                "depends_on": depends_on,
+                "type": "task"
+            },
             "from": self.mcp_id
         }
         
         # Only include reply_to if it exists in the task
         if "reply_to" in task:
-            message["reply_to"] = task["reply_to"]
+            message["content"]["reply_to"] = task["reply_to"]
         
         return await self.transport.send_message(target_url, message)
         
@@ -305,8 +369,8 @@ class EnhancedMCPAgent(MCPAgent):
                 print(f"{self.name}: Processing task: {task}")
                 
                 # Get task description and task_id
-                task_desc = task.get("description", "")
-                task_id = task.get("task_id", "")
+                task_desc = task.get("content", {}).get("description") if isinstance(task.get("content"), dict) else task.get("description", "")
+                task_id = task.get("content", {}).get("task_id") if isinstance(task.get("content"), dict) else task.get("task_id")
                 
                 if not task_desc or not task_id:
                     print(f"{self.name}: Error: Task is missing description or task_id")
@@ -430,7 +494,6 @@ class EnhancedMCPAgent(MCPAgent):
                         except Exception as e:
                             print(f"{self.name}: Error sending result: {e}")
                             traceback.print_exc()
-                    else:
                         # Store result locally if no reply_to or transport info is available
                         print(f"{self.name}: No reply_to or transport info, storing result locally for task {task_id}")
                         self.task_results[task_id] = response

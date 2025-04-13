@@ -16,7 +16,10 @@ import uvicorn
 from threading import Thread
 import traceback
 import logging
-from collections import deque # Added import
+from collections import deque 
+import time
+from datetime import datetime, timezone, timedelta
+from dateutil.parser import isoparse
 
 # Configure logging
 logging.basicConfig(
@@ -55,13 +58,14 @@ class HTTPTransport(MCPTransport):
     2. Client Mode: Connects to remote server (when is_remote=True)
     """
     
-    def __init__(self, host: str = "localhost", port: int = 8000):
+    def __init__(self, host: str = "localhost", port: int = 8000, poll_interval: int = 2):
         """
         Initialize the HTTP transport.
         
         Args:
             host: Host to bind to
             port: Port to bind to
+            poll_interval: How often to poll the server in seconds
         """
         self.host = host
         self.port = port
@@ -79,7 +83,9 @@ class HTTPTransport(MCPTransport):
         self._stop_polling_event = asyncio.Event() # Event to signal polling loop to stop
         self._polling_task = None # To hold the polling task
         self._client_session = None # Shared aiohttp client session
-        self._recently_acked_ids = deque(maxlen=100) # Initialize cache for acknowledged IDs
+        self._recently_acked_ids = deque(maxlen=500) # Track message IDs
+        self._seen_task_ids = deque(maxlen=500) # Track task IDs across polls
+        self.poll_interval = poll_interval
 
     def get_url(self) -> str:
         """Get the URL for this transport"""
@@ -100,7 +106,7 @@ class HTTPTransport(MCPTransport):
             An HTTPTransport instance configured for the URL
         """
         # For remote URLs, we don't need to start a local server
-        transport = cls()
+        transport = cls(poll_interval=2)  # Set default poll interval
         transport.remote_url = url
         transport.is_remote = True
         transport.agent_name = agent_name # Store agent name
@@ -120,180 +126,164 @@ class HTTPTransport(MCPTransport):
         except Exception as e:
             return {"status": "error", "message": str(e)}
             
-    async def _poll_for_messages(self, poll_interval: int = 2):
-        """Background task to poll the server for new messages."""
-        if not (self.is_remote and self.agent_name and self.token):
-            logger.error(f"[{self.agent_name or 'Unknown'}] Cannot start polling: Remote URL, agent name, or token missing.")
-            return
+    async def _ensure_session(self, force_reconnect: bool = False) -> None:
+        """Ensure we have a valid client session.
+        
+        Args:
+            force_reconnect: If True, create a new session even if one exists
+        """
+        if force_reconnect or not self._client_session or self._client_session.closed:
+            if self._client_session and not self._client_session.closed:
+                await self._client_session.close()
+            
+            # Create new session with proper headers
+            headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
+            self._client_session = aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(verify_ssl=False),
+                headers=headers
+            )
+            logger.info(f"[{self.agent_name}] Created new client session")
 
-        poll_url = f"{self.remote_url}/messages/{self.agent_name}"
-        headers = {"Authorization": f"Bearer {self.token}"}
+    async def _poll_for_messages(self) -> None:
+        """Poll for messages from the server.
 
-        # Ensure session is None initially or properly handled if re-polling is possible
-        if not hasattr(self, '_client_session') or self._client_session is None or self._client_session.closed:
-             # Use headers defined during initialization or connect
-             headers = {"Authorization": f"Bearer {self.token}"} if self.token else {}
-             self._client_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False), headers=headers)
-             logger.info(f"[{self.agent_name}] Created new client session for polling.")
-        elif not self._client_session.closed:
-             # Ensure headers are updated if token changed
-             if self.token and self._client_session.headers.get("Authorization") != f"Bearer {self.token}":
-                 self._client_session.headers["Authorization"] = f"Bearer {self.token}"
-                 logger.info(f"[{self.agent_name}] Updated Authorization header in existing session.")
-             logger.info(f"[{self.agent_name}] Reusing existing client session for polling.")
-
-
-        logger.info(f"[{self.agent_name}] Starting polling task for {poll_url} every {poll_interval}s")
+        This method runs in a loop, polling the server for new messages.
+        It handles reconnection and error recovery.
+        """
+        retry_count = 0
+        max_retries = 5
+        base_delay = 1.0  # Base delay in seconds
+        max_delay = 30.0  # Maximum delay in seconds
 
         while not self._stop_polling_event.is_set():
-            messages = [] # Ensure messages is initialized for each poll cycle
             try:
-                params = {}
-                if self.last_message_id:
-                    params["last_message_id"] = self.last_message_id
+                # Ensure we have a valid session
+                await self._ensure_session()
+                
+                # Create headers with authentication token
+                headers = {}
+                if self.token:
+                    headers["Authorization"] = f"Bearer {self.token}"
+                
+                # Poll for messages with authentication headers
+                async with self._client_session.get(
+                    f"{self.remote_url}/messages/{self.agent_name}",
+                    headers=headers
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        logger.info(f"[{self.agent_name}] Raw server response: {json.dumps(data, indent=2)}")
+                        
+                        # Extract messages from the response body
+                        messages = []
+                        if isinstance(data, dict):
+                            body = data.get('body', '[]')
+                            try:
+                                messages = json.loads(body)
+                                logger.info(f"[{self.agent_name}] Parsed messages from body: {json.dumps(messages, indent=2)}")
+                            except json.JSONDecodeError:
+                                logger.warning(f"[{self.agent_name}] Failed to parse messages from body: {body}")
+                                messages = []
+                        
+                        if messages:
+                            # Sort messages by timestamp before processing
+                            messages.sort(key=lambda x: x.get('timestamp', ''))
+                            
+                            # Clear old messages from the queue to prevent buildup
+                            while not self.message_queue.empty():
+                                try:
+                                    self.message_queue.get_nowait()
+                                    self.message_queue.task_done()
+                                except asyncio.QueueEmpty:
+                                    break
 
-                logger.debug(f"[{self.agent_name}] Polling {poll_url} with params: {params}")
-                async with self._client_session.get(poll_url, params=params, timeout=aiohttp.ClientTimeout(total=poll_interval + 10)) as response:
-                    response.raise_for_status()
-                    logger.debug(f"[{self.agent_name}] Polling response status: {response.status}")
-                    response_text = await response.text() # Get raw text first
-                    logger.debug(f"[{self.agent_name}] Raw polling response text: {response_text[:500]}...", flush=True) # Log the raw text
-                    # Check content type before parsing JSON
-                    content_type = response.headers.get('Content-Type', '')
-                    if 'application/json' not in content_type:
-                         # Handle non-JSON response (e.g., empty, text, HTML error page)
-                         raw_body = response_text
-                         logger.warning(f"[{self.agent_name}] Received non-JSON response from /messages: Status={response.status}, Content-Type={content_type}, Body='{raw_body[:100]}...'")
-                         messages = [] # Treat as no messages
+                            logger.info(f"[{self.agent_name}] Processing {len(messages)} messages")
+                            for msg in messages:
+                                try:
+                                    # Validate message format
+                                    if not isinstance(msg, dict):
+                                        logger.warning(f"[{self.agent_name}] Invalid message format: {msg}")
+                                        continue
+
+                                    # Extract message ID and content
+                                    message_id = msg.get('id')
+                                    message_content = msg.get('content')
+                                    
+                                    # Skip if we've seen this message before - check BEFORE processing
+                                    if message_id in self._seen_task_ids:
+                                        logger.debug(f"[{self.agent_name}] Message {message_id} already processed. Skipping.")
+                                        continue
+                                        
+                                    # Add to seen messages BEFORE processing
+                                    self._seen_task_ids.append(message_id)
+                                    
+                                    # Standardize message content format
+                                    if isinstance(message_content, str):
+                                        message_content = {'text': message_content}
+                                        msg['content'] = message_content
+                                    elif isinstance(message_content, dict):
+                                        if message_content.get('type') == 'task':
+                                            # Preserve task structure
+                                            pass
+                                        elif 'text' not in message_content:
+                                            # Wrap non-task dictionaries that don't have a text field
+                                            message_content = {'text': json.dumps(message_content)}
+                                            msg['content'] = message_content
+
+                                    logger.info(f"[{self.agent_name}] Processing message - ID: {message_id}, Content: {json.dumps(message_content, indent=2)}")
+                                    
+                                    # Add message to queue for processing
+                                    await self.message_queue.put((msg, message_id))
+                                    logger.info(f"[{self.agent_name}] Added message to queue: {message_id}")
+                                except Exception as e:
+                                    logger.error(f"[{self.agent_name}] Error processing message: {e}")
+                                    continue
+                        else:
+                            logger.debug(f"[{self.agent_name}] No new messages")
                     else:
-                         try:
-                             response_data = json.loads(response_text)
- 
-                             # Case 1: Response is a dict containing a 'body' field with a JSON string list
-                             if isinstance(response_data, dict) and 'body' in response_data:
-                                 body_content = response_data.get('body')
-                                 if isinstance(body_content, str):
-                                     try:
-                                         parsed_body = json.loads(body_content)
-                                         if isinstance(parsed_body, list):
-                                             messages = parsed_body # Use the list parsed from 'body'
-                                             logger.debug(f"[{self.agent_name}] Parsed {len(messages)} messages from 'body' string.")
-                                         else:
-                                             logger.warning(f"[{self.agent_name}] Parsed 'body' string is not a list: {type(parsed_body)}. Body: {body_content[:100]}...")
-                                     except json.JSONDecodeError as json_err:
-                                         logger.warning(f"[{self.agent_name}] Failed to decode 'body' string as JSON: {json_err}. Body: {body_content[:100]}...")
-                                 elif body_content is not None:
-                                      logger.warning(f"[{self.agent_name}] 'body' field is not a string: {type(body_content)}. Discarding.")
-                                 # If 'body' exists but is empty/None/unparsable, messages remains []
-                             
-                             # Case 2: Response is directly a list of messages
-                             elif isinstance(response_data, list):
-                                 messages = response_data
-                                 logger.debug(f"[{self.agent_name}] Received response directly as a list of {len(messages)} messages.")
-                                 
-                             # Case 3: Response is a single message dictionary (not wrapped in 'body')
-                             elif isinstance(response_data, dict):
-                                 messages = [response_data] # Wrap single dictionary in a list
-                                 logger.debug(f"[{self.agent_name}] Received single message dict (not in 'body'), wrapping in list.")
-                                 
-                             # Case 4: Unexpected JSON structure
-                             else:
-                                 logger.warning(f"[{self.agent_name}] Unexpected JSON type from /messages: {type(response_data)}. Body: {str(response_data)[:100]}...")
-                             # << NEW LOGIC END >>
-                                
-                         except aiohttp.ContentTypeError:
-                             raw_body = await response.text()
-                             logger.error(f"[{self.agent_name}] ContentTypeError despite header check. Status={response.status}, Body='{raw_body[:100]}...'")
-                             messages = []
-                         except json.JSONDecodeError:
-                             raw_body = await response.text()
-                             logger.error(f"[{self.agent_name}] JSONDecodeError. Status={response.status}, Body='{raw_body[:100]}...'")
-                             messages = []
-
-                    if messages:
-                        logger.debug(f"[{self.agent_name}] Received {len(messages)} message(s) from server.")
-                        new_last_id = None
-
-                        queued_task_ids_in_batch = set() # Track task IDs seen in this batch
-
-                        for msg in messages:
-                            # Skip invalid messages (e.g., not dictionaries)
-                            if not isinstance(msg, dict):
-                                logger.warning(f"[{self.agent_name}] Skipping invalid message format in list: {msg}")
+                        logger.warning(f"[{self.agent_name}] Server returned status {response.status}")
+                        if response.status == 401:
+                            # Authentication error - try to reauthenticate
+                            await self._ensure_session(force_reconnect=True)
+                        elif response.status >= 500:
+                            # Server error - use exponential backoff
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                delay = min(base_delay * (2 ** retry_count), max_delay)
+                                logger.warning(f"[{self.agent_name}] Server error, retrying in {delay}s...")
+                                await asyncio.sleep(delay)
                                 continue
 
-                            # Get message ID
-                            msg_id = msg.get('id')
-                            if not msg_id:
-                                logger.warning(f"[{self.agent_name}] Message in list missing ID: {msg}")
-                                continue # Cannot acknowledge without ID
+                # Reset retry count on successful poll
+                retry_count = 0
+                await asyncio.sleep(self.poll_interval)
 
-                            # --- BEGIN DEDUPLICATION LOGIC ---
-                            task_id = msg.get('task_id')
-                            if task_id:
-                                if task_id in queued_task_ids_in_batch:
-                                    logger.warning(f"[{self.agent_name}] Skipping duplicate task_id '{task_id}' (message ID: {msg_id}) within the same poll batch.")
-                                    continue # Skip this duplicate task
-                                else:
-                                    queued_task_ids_in_batch.add(task_id) # Mark task_id as seen in this batch
-                            # --- END DEDUPLICATION LOGIC ---
-
-                            # Check for all required fields before queuing
-                            required_fields = ['type', 'content', 'from', 'timestamp']
-                            if all(field in msg for field in required_fields):
-                                # Log queuing action *before* putting it on the queue
-                                logger.info(f"[{self.agent_name}] Queueing message ID: {msg_id} Type: {msg.get('type')} From: {msg.get('from')}")
-                                await self.message_queue.put((msg, msg_id))
-                                new_last_id = msg_id # Track latest ID processed successfully
-                                logger.debug(f"[{self.agent_name}] Successfully queued message {msg_id}")
-                            else:
-                                missing = [field for field in required_fields if field not in msg]
-                                logger.warning(f"[{self.agent_name}] Message ID {msg_id} missing required fields: {missing}. Skipping. Message: {msg}")
-                                continue # Skip incomplete messages
-
-                        # Update last seen ID *only if* we processed any valid messages in this batch
-                        if new_last_id:
-                            self.last_message_id = new_last_id
-                            logger.debug(f"[{self.agent_name}] Updated last_message_id to {new_last_id}")
-                        else:
-                             logger.debug(f"[{self.agent_name}] No valid messages processed in this batch, last_message_id remains {self.last_message_id}")
-
-
-                    elif response.status in [401, 403]:
-                        error_text = await response.text()
-                        logger.error(f"[{self.agent_name}] Authentication error ({response.status}) polling messages: {error_text}. Stopping poll task.")
-                        self._stop_polling_event.set() # Stop polling on auth errors
-                        break # Exit the while loop immediately
-                    else:
-                        # Handle other non-200 responses (e.g., 404, 500)
-                        error_text = await response.text()
-                        logger.warning(f"[{self.agent_name}] Error polling messages ({response.status}): {error_text[:200]}... Retrying after interval.")
-
-            except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                logger.warning(f"[{self.agent_name}] Network error or timeout during polling: {e}. Retrying after interval.")
+            except asyncio.CancelledError:
+                logger.info(f"[{self.agent_name}] Polling task cancelled")
+                break
             except Exception as e:
-                # Catch-all for unexpected errors within the poll loop itself
-                logger.exception(f"[{self.agent_name}] Unexpected error in polling loop: {e}")
+                logger.error(f"[{self.agent_name}] Error in polling task: {e}")
+                retry_count += 1
+                if retry_count < max_retries:
+                    delay = min(base_delay * (2 ** retry_count), max_delay)
+                    logger.warning(f"[{self.agent_name}] Error occurred, retrying in {delay}s...")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"[{self.agent_name}] Max retries reached, stopping polling")
+                    break
 
-            # Wait before the next poll attempt, unless stopping
-            if not self._stop_polling_event.is_set():
-                logger.debug(f"[{self.agent_name}] Waiting {poll_interval}s before next poll...")
-                await asyncio.sleep(poll_interval)
-
-        # --- End of while loop ---
-        logger.info(f"[{self.agent_name}] Polling task stopped.")
-        # Ensure session is closed when polling loop exits
-        if hasattr(self, '_client_session') and self._client_session and not self._client_session.closed:
-            await self._client_session.close()
-            logger.info(f"[{self.agent_name}] Client session closed after polling loop exit.")
-        self._client_session = None # Reset session variable
+        logger.info(f"[{self.agent_name}] Polling task stopped")
 
     async def start_polling(self, poll_interval: int = 2):
         """Starts the background message polling task."""
+        # Set connection time before polling starts, ensuring we use UTC
+        self._connection_time = datetime.utcnow().replace(tzinfo=timezone.utc)
+        self.last_message_id = None # Also reset message tracking here
+
         if not self.is_remote:
             logger.warning("Polling is only applicable in remote mode. Agent: {self.agent_name}")
             return
-
+            
         if not self.agent_name or not self.auth_token:
             logger.error("Cannot start polling without agent_name and auth_token. Agent: {self.agent_name}")
             raise ValueError("Agent name and authentication token must be set before starting polling.")
@@ -315,7 +305,7 @@ class HTTPTransport(MCPTransport):
             logger.debug(f"Created new ClientSession for agent: {self.agent_name}")
 
         logger.info(f"Starting polling task for agent: {self.agent_name} with interval {poll_interval}s")
-        self._polling_task = asyncio.create_task(self._poll_for_messages(poll_interval))
+        self._polling_task = asyncio.create_task(self._poll_for_messages())
  
 
     async def connect(self, agent_name: Optional[str] = None, token: Optional[str] = None, poll_interval: int = 2):
@@ -330,6 +320,8 @@ class HTTPTransport(MCPTransport):
             token: The JWT token for authentication. Overrides existing if provided.
             poll_interval: How often to poll the server in seconds.
         """
+        self.last_message_id = None  # Reset message tracking on new connection
+
         if not self.is_remote:
             logger.warning("connect() called but transport is not in remote mode. Did you mean start()?)")
             return
@@ -351,7 +343,7 @@ class HTTPTransport(MCPTransport):
         self._stop_polling_event.clear()
         
         logger.info(f"[{self.agent_name}] Creating and starting polling task.")
-        self._polling_task = asyncio.create_task(self._poll_for_messages(poll_interval), name=f"poll_messages_{self.agent_name}")
+        self._polling_task = asyncio.create_task(self._poll_for_messages(), name=f"poll_messages_{self.agent_name}")
         # Add error handling for task creation?
 
     async def disconnect(self):
@@ -395,77 +387,83 @@ class HTTPTransport(MCPTransport):
 
     # --- Message Sending ---
     async def send_message(self, target: str, message: Dict[str, Any]):
-        """Send a message to another agent.
-        
-        This method handles message delivery to other agents through HTTP POST requests.
-        It supports both local and remote message delivery with automatic retries and
-        error handling.
-        
-        Args:
-            target: The target agent's endpoint URL or identifier
-            message: The message payload to send
+        """Send a message to another agent."""
+        try:
+            # Ensure message has proper structure
+            if isinstance(message, dict) and 'content' not in message:
+                message = {
+                    "type": message.get("type", "message"),
+                    "content": message,
+                    "reply_to": message.get("reply_to", f"{self.remote_url}/message/{self.agent_name}")
+                }
             
-        Returns:
-            Dict containing the server's response or error information
-            
-        Raises:
-            ClientError: If there are network or connection issues
-            ValueError: If the message format is invalid
-        """
-        # Create a ClientSession with optimized settings
-        timeout = aiohttp.ClientTimeout(total=55)  # 55s timeout (Cloud Run's limit is 60s)
-        async with ClientSession(
-            connector=TCPConnector(verify_ssl=False),
-            timeout=timeout
-        ) as session:
-            try:
-                # Use target URL as is since it's already complete
-                url = target
-                logger.info(f"[{self.agent_name}] Sending message to {url}")
-                
-                # Include auth token in headers if we have one
-                headers = {}
-                if hasattr(self, 'auth_token') and self.auth_token:
-                    headers['Authorization'] = f'Bearer {self.auth_token}'
-                logger.debug(f"[{self.agent_name}] Using headers: {headers}")
-                    
-                async with session.post(url, json=message, headers=headers) as response:
-                    response_text = await response.text()
-                    try:
-                        response_data = json.loads(response_text)
-                    except json.JSONDecodeError:
-                        response_data = {"status": "error", "message": response_text}
-                        
-                    if response.status != 200:
-                        logger.error(f"[{self.agent_name}] Error sending message: {response.status}")
-                        logger.error(f"[{self.agent_name}] Response: {response_data}")
-                        return {"status": "error", "code": response.status, "message": response_data}
-                        
-                    logger.info(f"[{self.agent_name}] Message sent successfully")
-                    
-                    # Handle body parsing if present
-                    if isinstance(response_data, dict) and 'body' in response_data:
+            # Create a ClientSession with optimized settings
+            timeout = aiohttp.ClientTimeout(total=55)  # 55s timeout (Cloud Run's limit is 60s)
+            async with ClientSession(
+                connector=TCPConnector(verify_ssl=False),
+                timeout=timeout
+            ) as session:
+                try:
+                    # --- FIX: Parse target if it looks like a full URL ---
+                    parsed_target = target
+                    if "://" in target:
                         try:
-                            # Attempt to parse the body string as JSON (should be a list)
-                            parsed_body = json.loads(response_data['body'])
-                            if isinstance(parsed_body, list):
-                                response_data['body'] = parsed_body # Assign the parsed list to body
-                                logger.debug(f"[{self.agent_name}] Successfully parsed message body as JSON list.")
-                            else:
-                                logger.warning(f"[{self.agent_name}] Parsed message body is not a list: {type(parsed_body)}. Body: {response_data['body'][:200]}...") # Log truncated body
-                        except json.JSONDecodeError as e:
-                            logger.warning(f"[{self.agent_name}] Failed to decode message body as JSON: {e}. Body: {response_data['body'][:200]}...") # Log truncated body
-                            
-                    # Queue task messages
-                    if response_data.get('type') == 'task':
-                        message_id = response_data.get('message_id')
-                        logger.info(f"[{self.agent_name}] Queueing task message {message_id}")
-                        await self.message_queue.put((response_data, message_id))
+                            # Extract the last part of the path as the agent name
+                            parsed_target = target.split('/')[-1]
+                            if not parsed_target: # Handle trailing slash case
+                                parsed_target = target.split('/')[-2]
+                            logger.info(f"[{self.agent_name}] Parsed target URL '{target}' to agent name '{parsed_target}'")
+                        except IndexError:
+                            logger.warning(f"[{self.agent_name}] Could not parse agent name from target URL '{target}', using original.")
+                            parsed_target = target # Fallback to original if parsing fails
                     
-                    return response_data
-            except Exception as e:
-                logger.error(f"[{self.agent_name}] Error sending message: {e}")
-                return {"status": "error", "message": str(e)}
+                    # Construct the URL using the potentially parsed target
+                    url = f"{self.remote_url}/message/{parsed_target}" 
+
+                    headers = {"Authorization": f"Bearer {self.token}"}
+                    logger.info(f"[{self.agent_name}] Sending message to {url} (original target was '{target}')")
+                    
+                    async with session.post(url, json=message, headers=headers) as response:
+                        response_text = await response.text()
+                        try:
+                            response_data = json.loads(response_text)
+                        except json.JSONDecodeError:
+                            response_data = {"status": "error", "message": response_text}
+                            
+                        if response.status != 200:
+                            logger.error(f"[{self.agent_name}] Error sending message: {response.status}")
+                            logger.error(f"[{self.agent_name}] Response: {response_data}")
+                            return {"status": "error", "code": response.status, "message": response_data}
+                            
+                        logger.info(f"[{self.agent_name}] sent this Message : {response_data}  successfully")
+                        
+                        # Handle body parsing if present
+                        if isinstance(response_data, dict):
+                            if 'body' in response_data:
+                                try:
+                                    # Attempt to parse the body string as JSON
+                                    parsed_body = json.loads(response_data['body'])
+                                    if isinstance(parsed_body, list):
+                                        response_data['body'] = parsed_body
+                                        logger.info(f"[{self.agent_name}] Successfully parsed message body as JSON list.")
+                                    else:
+                                        logger.info(f"[{self.agent_name}] Message body is not a list: {type(parsed_body)}")
+                                except json.JSONDecodeError as e:
+                                    logger.info(f"[{self.agent_name}] Failed to decode message body as JSON: {e}")
+                            
+                            # Queue task messages
+                            if response_data.get('type') == 'task':
+                                message_id = response_data.get('message_id')
+                                logger.info(f"[{self.agent_name}] Queueing task message {message_id}")
+                                await self.message_queue.put((response_data, message_id))
+                            
+                        return response_data
+                except Exception as e:
+                    logger.error(f"[{self.agent_name}] Error sending message: {e}")
+                    return {"status": "error", "message": str(e)}
+        except Exception as e:
+            logger.error(f"[{self.agent_name}] Error in send_message: {e}")
+            return {"status": "error", "message": str(e)}
                 
     async def acknowledge_message(self, target: str, message_id: str):
         """Acknowledge receipt of a message"""
@@ -507,7 +505,7 @@ class HTTPTransport(MCPTransport):
             logger.error(f"[{self.agent_name}] Error acknowledging message {message_id}: {e}")
             return False
 
-    async def receive_message(self, timeout: float = 1.0) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    async def receive_message(self, timeout: float = 5.0) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Receive a message fetched by the polling task.
 
         Waits for a message from the internal queue with a timeout.
@@ -523,64 +521,66 @@ class HTTPTransport(MCPTransport):
         """
         # Check if polling is active before waiting
         if not self._polling_task or self._polling_task.done():
-            # If polling task is not running or finished (potentially due to error or disconnect),
-            # don't wait indefinitely for messages that will never arrive.
-            # We check if the queue is empty; if not, process remaining messages.
-            if self.message_queue.empty():
-                logger.debug(f"[{self.agent_name}] Polling task inactive and queue empty. Returning None.")
+            # If polling task is not running or finished, try to restart it
+            logger.warning(f"[{self.agent_name}] Polling task inactive, attempting to restart...")
+            try:
+                await self.start_polling()
+                # Wait a bit for polling to start
+                await asyncio.sleep(1)
+            except Exception as e:
+                logger.error(f"[{self.agent_name}] Failed to restart polling: {e}")
                 return None, None
-            else:
-                logger.debug(f"[{self.agent_name}] Polling task inactive, but queue has messages. Trying to dequeue one.")
-                # Fall through to try and get remaining messages without timeout
-                timeout = 0 # Set timeout to 0 to get immediately if available
 
         try:
             # Wait for a message from the queue with a timeout
             if timeout > 0:
-                logger.debug(f"[{self.agent_name}] Waiting for message from queue (timeout={timeout}s)...")
+                logger.info(f"[{self.agent_name}] Waiting for message from queue (timeout={timeout}s)...")
                 try:
                     message, message_id = await asyncio.wait_for(self.message_queue.get(), timeout=timeout)
+                    logger.info(f"[{self.agent_name}] Received message from queue: {json.dumps(message, indent=2)}")
                 except asyncio.TimeoutError:
-                    # This is normal - no message available within timeout
-                    logger.debug(f"[{self.agent_name}] Timeout waiting for message. Returning None.")
+                    logger.info(f"[{self.agent_name}] Timeout waiting for message. Returning None.")
                     return None, None
             else:
-                # Non-blocking get if timeout is 0 or polling stopped with items left
+                # Non-blocking get if timeout is 0
                 try:
                     message, message_id = self.message_queue.get_nowait()
                 except asyncio.QueueEmpty:
-                    # Queue is empty
-                    logger.debug(f"[{self.agent_name}] Queue empty on get_nowait. Returning None.")
+                    logger.info(f"[{self.agent_name}] Queue empty on get_nowait. Returning None.")
                     return None, None
-                
-            logger.info(f"[{self.agent_name}] Received message from queue: {json.dumps(message, indent=2)}")
-            
+
             # Validate message before returning
-            if message and isinstance(message, dict) and message.get('type') and message.get('content'):
-                logger.info(f"[{self.agent_name}] Message validation passed, returning message with ID: {message_id}")
-                # Mark task done *after* successful retrieval and validation
-                self.message_queue.task_done()
-                return message, message_id
+            if message and isinstance(message, dict):
+                # More lenient validation - only check for essential fields
+                if 'content' in message or 'text' in message or 'description' in message:
+                    logger.info(f"[{self.agent_name}] Message validation passed, returning message with ID: {message_id}")
+                    # Mark task done *after* successful retrieval and validation
+                    self.message_queue.task_done()
+                    # Acknowledge the message after successfully receiving it
+                    if message.get('from') and message_id:
+                        await self.acknowledge_message(message.get('from'), message_id)
+                    return message, message_id
+                else:
+                    logger.warning(f"[{self.agent_name}] Message missing required 'content' field. Message: {message}")
             else:
-                logger.warning(f"[{self.agent_name}] Dequeued message failed validation. Returning None. Message: {message}, ID: {message_id}")
-                # Mark task as done even if validation failed, as we dequeued it
-                self.message_queue.task_done()
-                return None, None
-                
+                logger.warning(f"[{self.agent_name}] Invalid message format. Message: {message}")
+
+            # Mark task as done even if validation failed
+            self.message_queue.task_done()
+            return None, None
+
         except asyncio.CancelledError:
             logger.info(f"[{self.agent_name}] receive_message task cancelled.")
             raise
         except Exception as e:
-            logger.error(f"[{self.agent_name}] Error receiving message: {e}. Returning None.")
+            logger.error(f"[{self.agent_name}] Error receiving message: {e}")
             traceback.print_exc()
-            # Ensure task_done is called even on exception if item was potentially dequeued
-            # Note: This might double-call task_done if the error happened before get(), but Queue handles this.
             try:
-                 self.message_queue.task_done()
-            except ValueError: # Already marked done
-                 pass 
+                self.message_queue.task_done()
+            except ValueError:
+                pass
             except Exception as inner_e:
-                 logger.error(f"[{self.agent_name}] Error calling task_done in exception handler: {inner_e}")
+                logger.error(f"[{self.agent_name}] Error calling task_done in exception handler: {inner_e}")
             return None, None
 
     # Legacy method - replaced by new acknowledge_message with target parameter
@@ -677,7 +677,9 @@ class HTTPTransport(MCPTransport):
             raise ValueError("register_agent can only be used with remote servers")
             
         # Create a ClientSession with SSL verification disabled
-        async with ClientSession(connector=TCPConnector(verify_ssl=False)) as session:
+        async with ClientSession(
+            connector=TCPConnector(verify_ssl=False)
+        ) as session:
             try:
                 registration_data = {
                     "agent_id": agent.name,  

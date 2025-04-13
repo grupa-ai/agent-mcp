@@ -13,8 +13,8 @@ from langchain.agents import AgentExecutor
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_openai_tools_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from mcp_agent import MCPAgent
-from mcp_transport import HTTPTransport
+from .mcp_agent import MCPAgent
+from .mcp_transport import HTTPTransport
 from fastapi import FastAPI, Request
 import uvicorn
 from threading import Thread

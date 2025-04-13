@@ -4,8 +4,8 @@ Adapter for Langchain agents to work with MCP.
 
 import asyncio
 from typing import Dict, Any, Optional
-from mcp_agent import MCPAgent
-from mcp_transport import MCPTransport
+from .mcp_agent import MCPAgent
+from .mcp_transport import MCPTransport
 from langchain.agents import AgentExecutor
 from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
 import traceback
@@ -64,9 +64,15 @@ class LangchainMCPAdapter(MCPAgent):
             
     async def handle_incoming_message(self, message: Dict[str, Any], message_id: Optional[str] = None):
         """Handle incoming messages from other agents"""
+        # First check if type is directly in the message
         msg_type = message.get("type")
+        
+        # If not, check if it's inside the content field
+        if not msg_type and "content" in message and isinstance(message["content"], dict):
+            msg_type = message["content"].get("type")
+            
         sender = message.get("sender", "Unknown")
-        task_id = message.get("task_id")
+        task_id = message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
         logger.info(f"[{self.name}] Received message (ID: {message_id}) of type '{msg_type}' from {sender} (Task ID: {task_id})")
         
         # --- Idempotency Check ---
@@ -80,9 +86,10 @@ class LangchainMCPAdapter(MCPAgent):
 
         if msg_type == "task":
             logger.info(f"[{self.name}] Queueing task {task_id} (message_id: {message_id}) from {sender}")
-            task_id = message.get("task_id")
-            description = message.get("description")
-            reply_to = message.get("reply_to")
+            content = message.get("content", {})
+            task_id = content.get("task_id")
+            description = content.get("description")
+            reply_to = content.get("reply_to")
             
             if not task_id or not description:
                 print(f"[ERROR] {self.name}: Task message missing required fields: {message}")
@@ -143,11 +150,12 @@ class LangchainMCPAdapter(MCPAgent):
                     self.task_queue.task_done()
                     continue
                 
-                # Get task description and task_id
-                task_desc = task.get("description")
-                task_id = task.get("task_id")
-                task_type = task.get("type")
-                reply_to = task.get("reply_to")
+                # Get task details from content field if present
+                content = task.get("content", {})
+                task_desc = content.get("description")
+                task_id = content.get("task_id")
+                task_type = content.get("type")
+                reply_to = content.get("reply_to")
                 
                 print(f"[DEBUG] {self.name}: Task details:")
                 print(f"  - Type: {task_type}")
@@ -192,9 +200,18 @@ class LangchainMCPAdapter(MCPAgent):
                 # Send the result back
                 if reply_to and self.transport:
                     try:
-                        print(f"[DEBUG] {self.name}: Sending result to {reply_to}")
+                        # --- FIX: Extract agent name from reply_to URL --- 
+                        try:
+                            target_agent_name = reply_to.split('/')[-1]
+                        except IndexError:
+                            print(f"[ERROR] {self.name}: Could not extract agent name from reply_to URL: {reply_to}")
+                            target_agent_name = reply_to # Fallback, though likely wrong
+                            
+                        print(f"[DEBUG] {self.name}: Sending result to target agent: {target_agent_name} (extracted from {reply_to})")
+                        # --- END FIX ---
+                        
                         await self.transport.send_message(
-                            reply_to,
+                            target_agent_name, # <<< Use extracted name, not full URL
                             {
                                 "type": "task_result",
                                 "task_id": task_id,
@@ -231,7 +248,7 @@ class LangchainMCPAdapter(MCPAgent):
 
     def _should_process_message(self, message: Dict[str, Any]) -> bool:
         """Check if a message should be processed based on idempotency"""
-        task_id = message.get("task_id")
+        task_id = message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
         if task_id in self._processed_tasks:
             logger.info(f"[{self.name}] Skipping duplicate task {task_id}")
             return False

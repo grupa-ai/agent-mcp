@@ -1,0 +1,613 @@
+2025-04-12 23:24:07,690 - httpx - INFO - HTTP Request: GET https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json "HTTP/1.1 200 OK"
+2025-04-12 23:24:08,518 - __main__ - INFO - Connecting agents...
+2025-04-12 23:24:08,519 - agent_mcp.mcp_decorator - INFO - Attempting registration for AutoGen_Alice at https://mcp-server-ixlfhxquwq-ew.a.run.app/register
+2025-04-12 23:24:08,519 - agent_mcp.mcp_decorator - INFO - Attempting registration for LangGraph_Bob at https://mcp-server-ixlfhxquwq-ew.a.run.app/register
+2025-04-12 23:24:08,906 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Creating and starting polling task.
+2025-04-12 23:24:08,907 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Created new client session
+2025-04-12 23:24:09,347 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:09,347 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: []
+2025-04-12 23:24:09,591 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Creating and starting polling task.
+2025-04-12 23:24:09,592 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Created new client session
+2025-04-12 23:24:09,592 - __main__ - INFO - Agents connected successfully.
+2025-04-12 23:24:09,592 - __main__ - INFO - Cleaning up old messages...
+2025-04-12 23:24:09,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:09,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: []
+2025-04-12 23:24:11,611 - __main__ - INFO - [AutoGen_Alice] Sending: {'content': {'text': "Hey there, Bob! What's the latest?"}}
+2025-04-12 23:24:11,612 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/LangGraph_Bob (original target was 'LangGraph_Bob')
+2025-04-12 23:24:11,676 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:11,676 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: []
+2025-04-12 23:24:12,151 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] sent this Message : {'body': '{"status":"delivered","message_id":"mFL70FgTrKiynf2ORpnW"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:12,151 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:12,151 - __main__ - INFO - [LangGraph_Bob] Waiting for reply...
+2025-04-12 23:24:12,151 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:12,306 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:12,306 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: []
+2025-04-12 23:24:13,154 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Timeout waiting for message. Returning None.
+2025-04-12 23:24:13,154 - __main__ - INFO - Processing message: (None, None)
+2025-04-12 23:24:13,155 - __main__ - INFO - Extracted message from tuple: None
+2025-04-12 23:24:13,155 - __main__ - WARNING - Unexpected message format: None
+2025-04-12 23:24:13,855 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:13,867 - __main__ - INFO - [LangGraph_Bob] Sending: {'content': {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}}
+2025-04-12 23:24:13,868 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/AutoGen_Alice (original target was 'AutoGen_Alice')
+2025-04-12 23:24:14,007 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[{\"id\":\"mFL70FgTrKiynf2ORpnW\",\"type\":\"message\",\"content\":{\"text\":\"Hey there, Bob! What's the latest?\"},\"timestamp\":\"2025-04-13T06:24:11.912292+00:00\",\"from\":\"AutoGen_Alice\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:14,007 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: [
+  {
+    "id": "mFL70FgTrKiynf2ORpnW",
+    "type": "message",
+    "content": {
+      "text": "Hey there, Bob! What's the latest?"
+    },
+    "timestamp": "2025-04-13T06:24:11.912292+00:00",
+    "from": "AutoGen_Alice"
+  }
+]
+2025-04-12 23:24:14,007 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing 1 messages
+2025-04-12 23:24:14,008 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: mFL70FgTrKiynf2ORpnW, Content: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:14,008 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:14,389 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] sent this Message : {'body': '{"status":"delivered","message_id":"xACbyyjyYUREOx9tNipo"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:14,389 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:14,389 - __main__ - INFO - [AutoGen_Alice] Waiting for reply...
+2025-04-12 23:24:14,389 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:14,640 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[{\"id\":\"xACbyyjyYUREOx9tNipo\",\"type\":\"message\",\"content\":{\"text\":\"If you have any questions or need assistance with anything, feel free to ask! I'm here to help.\"},\"timestamp\":\"2025-04-13T06:24:14.159391+00:00\",\"from\":\"LangGraph_Bob\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:14,640 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: [
+  {
+    "id": "xACbyyjyYUREOx9tNipo",
+    "type": "message",
+    "content": {
+      "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+    },
+    "timestamp": "2025-04-13T06:24:14.159391+00:00",
+    "from": "LangGraph_Bob"
+  }
+]
+2025-04-12 23:24:14,640 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing 1 messages
+2025-04-12 23:24:14,640 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: xACbyyjyYUREOx9tNipo, Content: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:14,640 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:14,641 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Received message from queue: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:14,641 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message validation passed, returning message with ID: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:14,641 - __main__ - INFO - Processing message: ({'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}, 'xACbyyjyYUREOx9tNipo')
+2025-04-12 23:24:14,641 - __main__ - INFO - Extracted message from tuple: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:14,641 - __main__ - WARNING - Message missing 'content' field: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:15,552 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:15,557 - __main__ - INFO - [AutoGen_Alice] Sending: {'content': {'text': 'Thanks, Bob! I appreciate your offer for help.'}}
+2025-04-12 23:24:15,557 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/LangGraph_Bob (original target was 'LangGraph_Bob')
+2025-04-12 23:24:16,102 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] sent this Message : {'body': '{"status":"delivered","message_id":"CidLN6omWvI5pxkPFNPp"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:16,103 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:16,103 - __main__ - INFO - [LangGraph_Bob] Waiting for reply...
+2025-04-12 23:24:16,103 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:16,104 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Received message from queue: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:16,104 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message validation passed, returning message with ID: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:16,104 - __main__ - INFO - Processing message: ({'text': "Hey there, Bob! What's the latest?"}, 'mFL70FgTrKiynf2ORpnW')
+2025-04-12 23:24:16,104 - __main__ - INFO - Extracted message from tuple: {'text': "Hey there, Bob! What's the latest?"}
+2025-04-12 23:24:16,104 - __main__ - WARNING - Message missing 'content' field: {'text': "Hey there, Bob! What's the latest?"}
+2025-04-12 23:24:16,333 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[{\"id\":\"CidLN6omWvI5pxkPFNPp\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:15.860572+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"mFL70FgTrKiynf2ORpnW\",\"type\":\"message\",\"content\":{\"text\":\"Hey there, Bob! What's the latest?\"},\"timestamp\":\"2025-04-13T06:24:11.912292+00:00\",\"from\":\"AutoGen_Alice\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:16,333 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: [
+  {
+    "id": "CidLN6omWvI5pxkPFNPp",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:15.860572+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "mFL70FgTrKiynf2ORpnW",
+    "type": "message",
+    "content": {
+      "text": "Hey there, Bob! What's the latest?"
+    },
+    "timestamp": "2025-04-13T06:24:11.912292+00:00",
+    "from": "AutoGen_Alice"
+  }
+]
+2025-04-12 23:24:16,333 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing 2 messages
+2025-04-12 23:24:16,333 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: CidLN6omWvI5pxkPFNPp, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:16,333 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: CidLN6omWvI5pxkPFNPp
+2025-04-12 23:24:16,334 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: mFL70FgTrKiynf2ORpnW, Content: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:16,334 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:16,841 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:16,873 - __main__ - INFO - [LangGraph_Bob] Sending: {'content': {'text': "Hello! I'm here and ready to chat. What's on your mind today?"}}
+2025-04-12 23:24:16,881 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/AutoGen_Alice (original target was 'AutoGen_Alice')
+2025-04-12 23:24:17,012 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[{\"id\":\"xACbyyjyYUREOx9tNipo\",\"type\":\"message\",\"content\":{\"text\":\"If you have any questions or need assistance with anything, feel free to ask! I'm here to help.\"},\"timestamp\":\"2025-04-13T06:24:14.159391+00:00\",\"from\":\"LangGraph_Bob\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:17,012 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: [
+  {
+    "id": "xACbyyjyYUREOx9tNipo",
+    "type": "message",
+    "content": {
+      "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+    },
+    "timestamp": "2025-04-13T06:24:14.159391+00:00",
+    "from": "LangGraph_Bob"
+  }
+]
+2025-04-12 23:24:17,012 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing 1 messages
+2025-04-12 23:24:17,012 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: xACbyyjyYUREOx9tNipo, Content: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:17,012 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:17,489 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] sent this Message : {'body': '{"status":"delivered","message_id":"sBvTBnakGXqWmm21bIFg"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:17,489 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:17,490 - __main__ - INFO - [AutoGen_Alice] Waiting for reply...
+2025-04-12 23:24:17,490 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:17,491 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Received message from queue: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:17,491 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message validation passed, returning message with ID: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:17,491 - __main__ - INFO - Processing message: ({'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}, 'xACbyyjyYUREOx9tNipo')
+2025-04-12 23:24:17,491 - __main__ - INFO - Extracted message from tuple: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:17,491 - __main__ - WARNING - Message missing 'content' field: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:17,501 - __main__ - INFO - [AutoGen_Alice] Sending: {'content': {'text': 'Thanks, Bob! I appreciate your offer for help.'}}
+2025-04-12 23:24:17,502 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/LangGraph_Bob (original target was 'LangGraph_Bob')
+2025-04-12 23:24:18,048 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] sent this Message : {'body': '{"status":"delivered","message_id":"8QJM91A1kGojWNJsmhUf"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:18,048 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:18,048 - __main__ - INFO - [LangGraph_Bob] Waiting for reply...
+2025-04-12 23:24:18,048 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:18,048 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Received message from queue: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:18,048 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message validation passed, returning message with ID: CidLN6omWvI5pxkPFNPp
+2025-04-12 23:24:18,048 - __main__ - INFO - Processing message: ({'text': 'Thanks, Bob! I appreciate your offer for help.'}, 'CidLN6omWvI5pxkPFNPp')
+2025-04-12 23:24:18,048 - __main__ - INFO - Extracted message from tuple: {'text': 'Thanks, Bob! I appreciate your offer for help.'}
+2025-04-12 23:24:18,048 - __main__ - WARNING - Message missing 'content' field: {'text': 'Thanks, Bob! I appreciate your offer for help.'}
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[{\"id\":\"8QJM91A1kGojWNJsmhUf\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:17.810354+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"CidLN6omWvI5pxkPFNPp\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:15.860572+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"mFL70FgTrKiynf2ORpnW\",\"type\":\"message\",\"content\":{\"text\":\"Hey there, Bob! What's the latest?\"},\"timestamp\":\"2025-04-13T06:24:11.912292+00:00\",\"from\":\"AutoGen_Alice\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: [
+  {
+    "id": "8QJM91A1kGojWNJsmhUf",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:17.810354+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "CidLN6omWvI5pxkPFNPp",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:15.860572+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "mFL70FgTrKiynf2ORpnW",
+    "type": "message",
+    "content": {
+      "text": "Hey there, Bob! What's the latest?"
+    },
+    "timestamp": "2025-04-13T06:24:11.912292+00:00",
+    "from": "AutoGen_Alice"
+  }
+]
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing 3 messages
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: 8QJM91A1kGojWNJsmhUf, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: 8QJM91A1kGojWNJsmhUf
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: CidLN6omWvI5pxkPFNPp, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: CidLN6omWvI5pxkPFNPp
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: mFL70FgTrKiynf2ORpnW, Content: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:18,667 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:18,692 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:18,701 - __main__ - INFO - [LangGraph_Bob] Sending: {'content': {'text': "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"}}
+2025-04-12 23:24:18,701 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/AutoGen_Alice (original target was 'AutoGen_Alice')
+2025-04-12 23:24:19,243 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] sent this Message : {'body': '{"status":"delivered","message_id":"CS4M8IgXlmh1pnVY4qTA"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:19,243 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:19,244 - __main__ - INFO - [AutoGen_Alice] Waiting for reply...
+2025-04-12 23:24:19,244 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[{\"id\":\"CS4M8IgXlmh1pnVY4qTA\",\"type\":\"message\",\"content\":{\"text\":\"You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!\"},\"timestamp\":\"2025-04-13T06:24:19.011048+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"sBvTBnakGXqWmm21bIFg\",\"type\":\"message\",\"content\":{\"text\":\"Hello! I'm here and ready to chat. What's on your mind today?\"},\"timestamp\":\"2025-04-13T06:24:17.245787+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"xACbyyjyYUREOx9tNipo\",\"type\":\"message\",\"content\":{\"text\":\"If you have any questions or need assistance with anything, feel free to ask! I'm here to help.\"},\"timestamp\":\"2025-04-13T06:24:14.159391+00:00\",\"from\":\"LangGraph_Bob\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: [
+  {
+    "id": "CS4M8IgXlmh1pnVY4qTA",
+    "type": "message",
+    "content": {
+      "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+    },
+    "timestamp": "2025-04-13T06:24:19.011048+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "sBvTBnakGXqWmm21bIFg",
+    "type": "message",
+    "content": {
+      "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+    },
+    "timestamp": "2025-04-13T06:24:17.245787+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "xACbyyjyYUREOx9tNipo",
+    "type": "message",
+    "content": {
+      "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+    },
+    "timestamp": "2025-04-13T06:24:14.159391+00:00",
+    "from": "LangGraph_Bob"
+  }
+]
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing 3 messages
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: CS4M8IgXlmh1pnVY4qTA, Content: {
+  "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+}
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: CS4M8IgXlmh1pnVY4qTA
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: sBvTBnakGXqWmm21bIFg, Content: {
+  "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+}
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: sBvTBnakGXqWmm21bIFg
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: xACbyyjyYUREOx9tNipo, Content: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Received message from queue: {
+  "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+}
+2025-04-12 23:24:19,343 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message validation passed, returning message with ID: CS4M8IgXlmh1pnVY4qTA
+2025-04-12 23:24:19,343 - __main__ - INFO - Processing message: ({'text': "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"}, 'CS4M8IgXlmh1pnVY4qTA')
+2025-04-12 23:24:19,343 - __main__ - INFO - Extracted message from tuple: {'text': "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"}
+2025-04-12 23:24:19,343 - __main__ - WARNING - Message missing 'content' field: {'text': "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"}
+2025-04-12 23:24:20,407 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:20,414 - __main__ - INFO - [AutoGen_Alice] Sending: {'content': {'text': 'Thank you, Bob! I appreciate your willingness to help.'}}
+2025-04-12 23:24:20,415 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/LangGraph_Bob (original target was 'LangGraph_Bob')
+2025-04-12 23:24:20,947 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] sent this Message : {'body': '{"status":"delivered","message_id":"RirCUeCjlivs9Q1Y6Qlp"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:20,947 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:20,947 - __main__ - INFO - [LangGraph_Bob] Waiting for reply...
+2025-04-12 23:24:20,947 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:20,947 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Received message from queue: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:20,947 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message validation passed, returning message with ID: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:20,947 - __main__ - INFO - Processing message: ({'text': "Hey there, Bob! What's the latest?"}, 'mFL70FgTrKiynf2ORpnW')
+2025-04-12 23:24:20,947 - __main__ - INFO - Extracted message from tuple: {'text': "Hey there, Bob! What's the latest?"}
+2025-04-12 23:24:20,947 - __main__ - WARNING - Message missing 'content' field: {'text': "Hey there, Bob! What's the latest?"}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[{\"id\":\"RirCUeCjlivs9Q1Y6Qlp\",\"type\":\"message\",\"content\":{\"text\":\"Thank you, Bob! I appreciate your willingness to help.\"},\"timestamp\":\"2025-04-13T06:24:20.710225+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"8QJM91A1kGojWNJsmhUf\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:17.810354+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"CidLN6omWvI5pxkPFNPp\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:15.860572+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"mFL70FgTrKiynf2ORpnW\",\"type\":\"message\",\"content\":{\"text\":\"Hey there, Bob! What's the latest?\"},\"timestamp\":\"2025-04-13T06:24:11.912292+00:00\",\"from\":\"AutoGen_Alice\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: [
+  {
+    "id": "RirCUeCjlivs9Q1Y6Qlp",
+    "type": "message",
+    "content": {
+      "text": "Thank you, Bob! I appreciate your willingness to help."
+    },
+    "timestamp": "2025-04-13T06:24:20.710225+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "8QJM91A1kGojWNJsmhUf",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:17.810354+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "CidLN6omWvI5pxkPFNPp",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:15.860572+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "mFL70FgTrKiynf2ORpnW",
+    "type": "message",
+    "content": {
+      "text": "Hey there, Bob! What's the latest?"
+    },
+    "timestamp": "2025-04-13T06:24:11.912292+00:00",
+    "from": "AutoGen_Alice"
+  }
+]
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing 4 messages
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: RirCUeCjlivs9Q1Y6Qlp, Content: {
+  "text": "Thank you, Bob! I appreciate your willingness to help."
+}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: RirCUeCjlivs9Q1Y6Qlp
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: 8QJM91A1kGojWNJsmhUf, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: 8QJM91A1kGojWNJsmhUf
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: CidLN6omWvI5pxkPFNPp, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: CidLN6omWvI5pxkPFNPp
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: mFL70FgTrKiynf2ORpnW, Content: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:20,985 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:21,420 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:21,429 - __main__ - INFO - [LangGraph_Bob] Sending: {'content': {'text': "Hello! I'm here and ready to chat. What's on your mind today?"}}
+2025-04-12 23:24:21,429 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/AutoGen_Alice (original target was 'AutoGen_Alice')
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[{\"id\":\"CS4M8IgXlmh1pnVY4qTA\",\"type\":\"message\",\"content\":{\"text\":\"You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!\"},\"timestamp\":\"2025-04-13T06:24:19.011048+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"sBvTBnakGXqWmm21bIFg\",\"type\":\"message\",\"content\":{\"text\":\"Hello! I'm here and ready to chat. What's on your mind today?\"},\"timestamp\":\"2025-04-13T06:24:17.245787+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"xACbyyjyYUREOx9tNipo\",\"type\":\"message\",\"content\":{\"text\":\"If you have any questions or need assistance with anything, feel free to ask! I'm here to help.\"},\"timestamp\":\"2025-04-13T06:24:14.159391+00:00\",\"from\":\"LangGraph_Bob\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: [
+  {
+    "id": "CS4M8IgXlmh1pnVY4qTA",
+    "type": "message",
+    "content": {
+      "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+    },
+    "timestamp": "2025-04-13T06:24:19.011048+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "sBvTBnakGXqWmm21bIFg",
+    "type": "message",
+    "content": {
+      "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+    },
+    "timestamp": "2025-04-13T06:24:17.245787+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "xACbyyjyYUREOx9tNipo",
+    "type": "message",
+    "content": {
+      "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+    },
+    "timestamp": "2025-04-13T06:24:14.159391+00:00",
+    "from": "LangGraph_Bob"
+  }
+]
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing 3 messages
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: CS4M8IgXlmh1pnVY4qTA, Content: {
+  "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+}
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: CS4M8IgXlmh1pnVY4qTA
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: sBvTBnakGXqWmm21bIFg, Content: {
+  "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+}
+2025-04-12 23:24:21,658 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: sBvTBnakGXqWmm21bIFg
+2025-04-12 23:24:21,659 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: xACbyyjyYUREOx9tNipo, Content: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:21,659 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:21,952 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] sent this Message : {'body': '{"status":"delivered","message_id":"qj1ApvAEiRsRrtC5XxBI"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:21,952 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:21,952 - __main__ - INFO - [AutoGen_Alice] Waiting for reply...
+2025-04-12 23:24:21,953 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:21,953 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Received message from queue: {
+  "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+}
+2025-04-12 23:24:21,953 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message validation passed, returning message with ID: sBvTBnakGXqWmm21bIFg
+2025-04-12 23:24:21,953 - __main__ - INFO - Processing message: ({'text': "Hello! I'm here and ready to chat. What's on your mind today?"}, 'sBvTBnakGXqWmm21bIFg')
+2025-04-12 23:24:21,953 - __main__ - INFO - Extracted message from tuple: {'text': "Hello! I'm here and ready to chat. What's on your mind today?"}
+2025-04-12 23:24:21,953 - __main__ - WARNING - Message missing 'content' field: {'text': "Hello! I'm here and ready to chat. What's on your mind today?"}
+2025-04-12 23:24:23,318 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Raw server response: {
+  "body": "[{\"id\":\"RirCUeCjlivs9Q1Y6Qlp\",\"type\":\"message\",\"content\":{\"text\":\"Thank you, Bob! I appreciate your willingness to help.\"},\"timestamp\":\"2025-04-13T06:24:20.710225+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"8QJM91A1kGojWNJsmhUf\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:17.810354+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"CidLN6omWvI5pxkPFNPp\",\"type\":\"message\",\"content\":{\"text\":\"Thanks, Bob! I appreciate your offer for help.\"},\"timestamp\":\"2025-04-13T06:24:15.860572+00:00\",\"from\":\"AutoGen_Alice\"},{\"id\":\"mFL70FgTrKiynf2ORpnW\",\"type\":\"message\",\"content\":{\"text\":\"Hey there, Bob! What's the latest?\"},\"timestamp\":\"2025-04-13T06:24:11.912292+00:00\",\"from\":\"AutoGen_Alice\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Parsed messages from body: [
+  {
+    "id": "RirCUeCjlivs9Q1Y6Qlp",
+    "type": "message",
+    "content": {
+      "text": "Thank you, Bob! I appreciate your willingness to help."
+    },
+    "timestamp": "2025-04-13T06:24:20.710225+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "8QJM91A1kGojWNJsmhUf",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:17.810354+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "CidLN6omWvI5pxkPFNPp",
+    "type": "message",
+    "content": {
+      "text": "Thanks, Bob! I appreciate your offer for help."
+    },
+    "timestamp": "2025-04-13T06:24:15.860572+00:00",
+    "from": "AutoGen_Alice"
+  },
+  {
+    "id": "mFL70FgTrKiynf2ORpnW",
+    "type": "message",
+    "content": {
+      "text": "Hey there, Bob! What's the latest?"
+    },
+    "timestamp": "2025-04-13T06:24:11.912292+00:00",
+    "from": "AutoGen_Alice"
+  }
+]
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing 4 messages
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: RirCUeCjlivs9Q1Y6Qlp, Content: {
+  "text": "Thank you, Bob! I appreciate your willingness to help."
+}
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: RirCUeCjlivs9Q1Y6Qlp
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: 8QJM91A1kGojWNJsmhUf, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: 8QJM91A1kGojWNJsmhUf
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: CidLN6omWvI5pxkPFNPp, Content: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:23,319 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: CidLN6omWvI5pxkPFNPp
+2025-04-12 23:24:23,320 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Processing message - ID: mFL70FgTrKiynf2ORpnW, Content: {
+  "text": "Hey there, Bob! What's the latest?"
+}
+2025-04-12 23:24:23,320 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Added message to queue: mFL70FgTrKiynf2ORpnW
+2025-04-12 23:24:23,331 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:23,368 - __main__ - INFO - [AutoGen_Alice] Sending: {'content': {'text': "Hi Bob! I'm just enjoying the day. How about you?"}}
+2025-04-12 23:24:23,369 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/LangGraph_Bob (original target was 'LangGraph_Bob')
+2025-04-12 23:24:23,910 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] sent this Message : {'body': '{"status":"delivered","message_id":"ldpoGNPpCZW9Kb1fNqdQ"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:23,910 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:23,911 - __main__ - INFO - [LangGraph_Bob] Waiting for reply...
+2025-04-12 23:24:23,911 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:23,912 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Received message from queue: {
+  "text": "Thanks, Bob! I appreciate your offer for help."
+}
+2025-04-12 23:24:23,912 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message validation passed, returning message with ID: 8QJM91A1kGojWNJsmhUf
+2025-04-12 23:24:23,912 - __main__ - INFO - Processing message: ({'text': 'Thanks, Bob! I appreciate your offer for help.'}, '8QJM91A1kGojWNJsmhUf')
+2025-04-12 23:24:23,912 - __main__ - INFO - Extracted message from tuple: {'text': 'Thanks, Bob! I appreciate your offer for help.'}
+2025-04-12 23:24:23,912 - __main__ - WARNING - Message missing 'content' field: {'text': 'Thanks, Bob! I appreciate your offer for help.'}
+2025-04-12 23:24:23,980 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Raw server response: {
+  "body": "[{\"id\":\"qj1ApvAEiRsRrtC5XxBI\",\"type\":\"message\",\"content\":{\"text\":\"Hello! I'm here and ready to chat. What's on your mind today?\"},\"timestamp\":\"2025-04-13T06:24:21.716933+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"CS4M8IgXlmh1pnVY4qTA\",\"type\":\"message\",\"content\":{\"text\":\"You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!\"},\"timestamp\":\"2025-04-13T06:24:19.011048+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"sBvTBnakGXqWmm21bIFg\",\"type\":\"message\",\"content\":{\"text\":\"Hello! I'm here and ready to chat. What's on your mind today?\"},\"timestamp\":\"2025-04-13T06:24:17.245787+00:00\",\"from\":\"LangGraph_Bob\"},{\"id\":\"xACbyyjyYUREOx9tNipo\",\"type\":\"message\",\"content\":{\"text\":\"If you have any questions or need assistance with anything, feel free to ask! I'm here to help.\"},\"timestamp\":\"2025-04-13T06:24:14.159391+00:00\",\"from\":\"LangGraph_Bob\"}]",
+  "headers": {},
+  "statusCode": 200
+}
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Parsed messages from body: [
+  {
+    "id": "qj1ApvAEiRsRrtC5XxBI",
+    "type": "message",
+    "content": {
+      "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+    },
+    "timestamp": "2025-04-13T06:24:21.716933+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "CS4M8IgXlmh1pnVY4qTA",
+    "type": "message",
+    "content": {
+      "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+    },
+    "timestamp": "2025-04-13T06:24:19.011048+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "sBvTBnakGXqWmm21bIFg",
+    "type": "message",
+    "content": {
+      "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+    },
+    "timestamp": "2025-04-13T06:24:17.245787+00:00",
+    "from": "LangGraph_Bob"
+  },
+  {
+    "id": "xACbyyjyYUREOx9tNipo",
+    "type": "message",
+    "content": {
+      "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+    },
+    "timestamp": "2025-04-13T06:24:14.159391+00:00",
+    "from": "LangGraph_Bob"
+  }
+]
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing 4 messages
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: qj1ApvAEiRsRrtC5XxBI, Content: {
+  "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+}
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: qj1ApvAEiRsRrtC5XxBI
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: CS4M8IgXlmh1pnVY4qTA, Content: {
+  "text": "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"
+}
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: CS4M8IgXlmh1pnVY4qTA
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: sBvTBnakGXqWmm21bIFg, Content: {
+  "text": "Hello! I'm here and ready to chat. What's on your mind today?"
+}
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: sBvTBnakGXqWmm21bIFg
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Processing message - ID: xACbyyjyYUREOx9tNipo, Content: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:23,981 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Added message to queue: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:24,405 - httpx - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2025-04-12 23:24:24,411 - __main__ - INFO - [LangGraph_Bob] Sending: {'content': {'text': "You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!"}}
+2025-04-12 23:24:24,411 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Sending message to https://mcp-server-ixlfhxquwq-ew.a.run.app/message/AutoGen_Alice (original target was 'AutoGen_Alice')
+2025-04-12 23:24:24,926 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] sent this Message : {'body': '{"status":"delivered","message_id":"mkhHEOK4ANSNfMWx5sdN"}', 'headers': {}, 'statusCode': 200}  successfully
+2025-04-12 23:24:24,926 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Message body is not a list: <class 'dict'>
+2025-04-12 23:24:24,926 - __main__ - INFO - [AutoGen_Alice] Waiting for reply...
+2025-04-12 23:24:24,926 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Waiting for message from queue (timeout=1.0s)...
+2025-04-12 23:24:24,927 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Received message from queue: {
+  "text": "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."
+}
+2025-04-12 23:24:24,927 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Message validation passed, returning message with ID: xACbyyjyYUREOx9tNipo
+2025-04-12 23:24:24,927 - __main__ - INFO - Processing message: ({'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}, 'xACbyyjyYUREOx9tNipo')
+2025-04-12 23:24:24,927 - __main__ - INFO - Extracted message from tuple: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:24,927 - __main__ - WARNING - Message missing 'content' field: {'text': "If you have any questions or need assistance with anything, feel free to ask! I'm here to help."}
+2025-04-12 23:24:24,935 - __main__ - INFO - Maximum message count reached. Ending conversation.
+2025-04-12 23:24:24,935 - __main__ - INFO - Disconnecting agents...
+2025-04-12 23:24:24,935 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Signaling polling task to stop.
+2025-04-12 23:24:24,935 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Signaling polling task to stop.
+2025-04-12 23:24:25,321 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Polling task stopped
+2025-04-12 23:24:25,321 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Polling task finished gracefully.
+2025-04-12 23:24:25,321 - agent_mcp.mcp_transport - INFO - [LangGraph_Bob] Closing client session in disconnect.
+2025-04-12 23:24:25,983 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Polling task stopped
+2025-04-12 23:24:25,983 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Polling task finished gracefully.
+2025-04-12 23:24:25,983 - agent_mcp.mcp_transport - INFO - [AutoGen_Alice] Closing client session in disconnect.
+2025-04-12 23:24:25,984 - __main__ - INFO - Agents disconnected.
+Using MCP Server: https://mcp-server-ixlfhxquwq-ew.a.run.app
+Registered with MCP server (result parsed): {'status': 'registered', 'agent_id': 'LangGraph_Bob', 'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZ2VudF9pZCI6IkxhbmdHcmFwaF9Cb2IiLCJ0eXBlIjpudWxsLCJleHAiOjE3NDQ1MjkwNDh9.o4wQpHfDdBXe5cVGfkIRvwmuw7BUn1nRmgC0k5Xwomk'}
+Token set for agent LangGraph_Bob
+Registered with MCP server (result parsed): {'status': 'registered', 'agent_id': 'AutoGen_Alice', 'token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhZ2VudF9pZCI6IkF1dG9HZW5fQWxpY2UiLCJ0eXBlIjpudWxsLCJleHAiOjE3NDQ1MjkwNDl9.rrMpQHMbIvBdThU6EhU6U-0XnYxITLG2NXxZ3cI0ekw'}
+Token set for agent AutoGen_Alice
+Initial message:  Hey there, Bob! What's the latest?
+Message from LangGraph:  content="If you have any questions or need assistance with anything, feel free to ask! I'm here to help." additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 23, 'prompt_tokens': 35, 'total_tokens': 58, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'id': 'chatcmpl-BLl3FsivtxVOxamnXPujCHnzlF4TX', 'finish_reason': 'stop', 'logprobs': None} id='run-d544494d-2083-468a-9e25-37e36d3dc947-0' usage_metadata={'input_tokens': 35, 'output_tokens': 23, 'total_tokens': 58, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}}
+Message from Autogen:  Thanks, Bob! I appreciate your offer for help.
+Message from LangGraph:  content="Hello! I'm here and ready to chat. What's on your mind today?" additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 18, 'prompt_tokens': 49, 'total_tokens': 67, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'id': 'chatcmpl-BLl3ItIvplSbkhe0ukpO4HM1oUi02', 'finish_reason': 'stop', 'logprobs': None} id='run-81e268b0-4d47-493d-b419-7309690773ff-0' usage_metadata={'input_tokens': 49, 'output_tokens': 18, 'total_tokens': 67, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}}
+Message from Autogen:  Thanks, Bob! I appreciate your offer for help.
+Message from LangGraph:  content="You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!" additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 25, 'prompt_tokens': 50, 'total_tokens': 75, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'id': 'chatcmpl-BLl3KaXcSSm74TZINJsoheU1Zxy8D', 'finish_reason': 'stop', 'logprobs': None} id='run-c565f866-538b-482a-b41a-230d06a2da7e-0' usage_metadata={'input_tokens': 50, 'output_tokens': 25, 'total_tokens': 75, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}}
+Message from Autogen:  Thank you, Bob! I appreciate your willingness to help.
+Message from LangGraph:  content="Hello! I'm here and ready to chat. What's on your mind today?" additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 18, 'prompt_tokens': 49, 'total_tokens': 67, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'id': 'chatcmpl-BLl3N88NQ1ENsrpHIiRwbZXnvVZrk', 'finish_reason': 'stop', 'logprobs': None} id='run-76343d2a-6bcd-4a50-af0a-5956d144abbb-0' usage_metadata={'input_tokens': 49, 'output_tokens': 18, 'total_tokens': 67, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}}
+Message from Autogen:  Hi Bob! I'm just enjoying the day. How about you?
+Message from LangGraph:  content="You're welcome! I'm here to help with anything you need. Just let me know how I can assist you!" additional_kwargs={'refusal': None} response_metadata={'token_usage': {'completion_tokens': 25, 'prompt_tokens': 50, 'total_tokens': 75, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'gpt-3.5-turbo-0125', 'system_fingerprint': None, 'id': 'chatcmpl-BLl3Q0fCPoJvlLUjnXvIGh7GUEIlf', 'finish_reason': 'stop', 'logprobs': None} id='run-c4907a5c-166a-4f57-9fe6-233eca3ea51a-0' usage_metadata={'input_tokens': 50, 'output_tokens': 25, 'total_tokens': 75, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}}

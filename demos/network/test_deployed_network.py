@@ -4,9 +4,9 @@ Test script for heterogeneous agents working together through the deployed serve
 
 import os
 import asyncio
-from enhanced_mcp_agent import EnhancedMCPAgent
-from langchain_mcp_adapter import LangchainMCPAdapter
-from heterogeneous_group_chat import HeterogeneousGroupChat
+from agent_mcp.enhanced_mcp_agent import EnhancedMCPAgent
+from agent_mcp.langchain_mcp_adapter import LangchainMCPAdapter
+from agent_mcp.heterogeneous_group_chat import HeterogeneousGroupChat
 import json
 
 # Langchain imports

@@ -8,9 +8,9 @@ from different frameworks (Autogen, Langchain, etc.) that can collaborate on tas
 import asyncio
 import json
 from typing import List, Dict, Any, Optional, Union, Sequence
-from mcp_transport import HTTPTransport
-from enhanced_mcp_agent import EnhancedMCPAgent
-from mcp_agent import MCPAgent
+from .mcp_transport import HTTPTransport
+from .enhanced_mcp_agent import EnhancedMCPAgent
+from .mcp_agent import MCPAgent
 
 class HeterogeneousGroupChat:
     """
@@ -218,13 +218,8 @@ class HeterogeneousGroupChat:
             # Don't run the agent if registration fails - it won't be able to communicate
             return None # Indicate failure
         
-    async def submit_task(self, task: Dict[str, Any]):
-        """
-        Submit a task to the group chat.
-        
-        Args:
-            task: Task definition including steps and dependencies
-        """
+    async def submit_task(self, task: Dict[str, Any]) -> None:
+        """Submit a task to the group chat."""
         print(f"***** [{self.name}] ENTERING submit_task *****", flush=True) # Ensure entry is logged
         if not self.coordinator:
             raise ValueError("Group chat not connected. Call connect() first.")
@@ -232,14 +227,18 @@ class HeterogeneousGroupChat:
         self.task_results = {} # Reset results for new task submission
         print("\n=== Submitting task to group ===")
 
+        # Ensure task is in the correct format
+        if not isinstance(task, dict) or 'type' not in task:
+            task = {'type': 'task', 'content': task}
+
         # Store task dependencies from the input task definition
         # We need a dictionary where keys are the step task_ids
-        if isinstance(task, dict) and all(isinstance(v, dict) for v in task.values()):
+        if isinstance(task['content'], dict) and all(isinstance(v, dict) for v in task['content'].values()):
             # If task is already a dict mapping task_ids to task info
-            self.task_dependencies = task
+            self.task_dependencies = task['content']
         else:
             # If task has a steps list, convert it to a dict
-            self.task_dependencies = {step["task_id"]: step for step in task.get("steps", [])}
+            self.task_dependencies = {step["task_id"]: step for step in task['content'].get("steps", [])}
         print(f"Parsed Step Dependencies: {self.task_dependencies}")
 
         # Also store in coordinator instance if it exists
@@ -263,7 +262,6 @@ class HeterogeneousGroupChat:
         for task_id, task_info in self.task_dependencies.items():
             print(f"[DEBUG - {self.name}] Loop Iteration: Processing task_id '{task_id}' for agent '{task_info['agent']}'", flush=True)
             agent_name = task_info["agent"]
-            agent_url = f"{self.server_url}/message/{agent_name}"
             message = {
                 "type": "task",
                 "task_id": task_id,
@@ -271,10 +269,10 @@ class HeterogeneousGroupChat:
                 "depends_on": task_info.get("depends_on", []),  # Include dependencies
                 "reply_to": f"{self.server_url}/message/{self.coordinator.name}" # Full URL for reply
             }
-            print(f"Sending task to {agent_name} at {agent_url}")
+            print(f"Sending task to {agent_name}")
             print(f"Task message: {message}")
             # Use coordinator's transport to send task to agent
-            await coordinator_transport.send_message(agent_url, message)
+            await coordinator_transport.send_message(agent_name, message)
             
         print("Task submitted. Waiting for completion...")
         

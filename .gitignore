@@ -78,6 +78,7 @@ firebase/firebase-key.json
 !package.json
 !firebase-key-template.json
 !tsconfig.json
+!firestore.indexes.json
 
 # OS generated files
 .DS_Store

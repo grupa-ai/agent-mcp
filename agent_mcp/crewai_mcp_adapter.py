@@ -10,8 +10,8 @@ import asyncio
 from typing import Dict, Any, Optional, Callable
 from crewai import Agent as CrewAgent
 from fastapi import FastAPI, Request
-from mcp_agent import MCPAgent
-from mcp_transport import HTTPTransport
+from .mcp_agent import MCPAgent
+from .mcp_transport import HTTPTransport
 import uvicorn
 from threading import Thread
 import time
