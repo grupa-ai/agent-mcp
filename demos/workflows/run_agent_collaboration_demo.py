@@ -6,7 +6,7 @@ hardcoded interaction patterns. The user only provides the topic, and the agents
 decide for themselves who to collaborate with and in what order.
 """
 
-from autonomous_langgraph_network import AutonomousAgentNetwork
+from demos.langgraph.autonomous_langgraph_network import AutonomousAgentNetwork
 import sys
 import time
 

@@ -57,6 +57,7 @@ class MCPAgent(ConversableAgent):
         mcp_id (str): Unique identifier for this MCP agent
         mcp_version (str): The MCP version implemented by this agent
         completed_task_ids (set): Set of completed task IDs for idempotency
+        transport (Any): Optional transport layer for MCP communication
     """
 
     def __init__(
@@ -66,6 +67,7 @@ class MCPAgent(ConversableAgent):
         is_termination_msg: Optional[Callable[[Dict], bool]] = None,
         max_consecutive_auto_reply: Optional[int] = None,
         human_input_mode: str = "NEVER",
+        transport: Optional[Any] = None,
         **kwargs,
     ):
         """
@@ -77,6 +79,7 @@ class MCPAgent(ConversableAgent):
             is_termination_msg: Function to determine if a message should terminate a conversation
             max_consecutive_auto_reply: Maximum number of consecutive automated replies
             human_input_mode: Human input mode setting
+            transport: Optional transport layer for MCP communication
             **kwargs: Additional keyword arguments passed to ConversableAgent
         """
         if system_message is None:
@@ -86,6 +89,7 @@ class MCPAgent(ConversableAgent):
                 "Use these tools to enhance your responses with relevant information."
             )
 
+        # Initialize ConversableAgent without transport
         super().__init__(
             name=name,
             system_message=system_message,
@@ -101,6 +105,7 @@ class MCPAgent(ConversableAgent):
         self.mcp_id = str(uuid.uuid4())
         self.mcp_version = "0.1.0"  # MCP version implemented
         self.completed_task_ids = set()  # Set of completed task IDs for idempotency
+        self.transport = transport  # Store transport at MCPAgent level
 
         # Register default MCP tools
         self._register_default_mcp_tools()

@@ -11,7 +11,7 @@ import json
 from typing import Dict, List, Any, Optional
 
 # Import MCPAgent
-from mcp_agent import MCPAgent
+from agent_mcp.mcp_agent import MCPAgent
 
 # Check for API key
 api_key = os.environ.get("OPENAI_API_KEY")

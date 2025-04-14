@@ -262,10 +262,12 @@ class HeterogeneousGroupChat:
         for task_id, task_info in self.task_dependencies.items():
             print(f"[DEBUG - {self.name}] Loop Iteration: Processing task_id '{task_id}' for agent '{task_info['agent']}'", flush=True)
             agent_name = task_info["agent"]
+            # Create message with all necessary fields including content
             message = {
                 "type": "task",
                 "task_id": task_id,
                 "description": task_info["description"],
+                "content": task_info.get("content", {}),  # Include task content
                 "depends_on": task_info.get("depends_on", []),  # Include dependencies
                 "reply_to": f"{self.server_url}/message/{self.coordinator.name}" # Full URL for reply
             }

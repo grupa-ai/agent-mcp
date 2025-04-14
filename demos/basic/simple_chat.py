@@ -13,7 +13,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, START, END
 from agent_mcp import mcp_agent
-
+from agent_mcp.mcp_agent import MCPAgent
 # Load environment variables
 load_dotenv()
 

@@ -72,7 +72,7 @@ class LangchainMCPAdapter(MCPAgent):
             msg_type = message["content"].get("type")
             
         sender = message.get("sender", "Unknown")
-        task_id = message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
+        task_id = message.get("task_id") or message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
         logger.info(f"[{self.name}] Received message (ID: {message_id}) of type '{msg_type}' from {sender} (Task ID: {task_id})")
         
         # --- Idempotency Check ---
@@ -87,8 +87,8 @@ class LangchainMCPAdapter(MCPAgent):
         if msg_type == "task":
             logger.info(f"[{self.name}] Queueing task {task_id} (message_id: {message_id}) from {sender}")
             content = message.get("content", {})
-            task_id = content.get("task_id")
-            description = content.get("description")
+            task_id = content.get("task_id") or message.get("task_id")
+            description = content.get("description") or message.get("description")
             reply_to = content.get("reply_to")
             
             if not task_id or not description:
@@ -152,10 +152,10 @@ class LangchainMCPAdapter(MCPAgent):
                 
                 # Get task details from content field if present
                 content = task.get("content", {})
-                task_desc = content.get("description")
-                task_id = content.get("task_id")
-                task_type = content.get("type")
-                reply_to = content.get("reply_to")
+                task_desc = content.get("description") or task.get("description")
+                task_id = content.get("task_id") or task.get("task_id")
+                task_type = content.get("type") or task.get("type")
+                reply_to = content.get("reply_to") or task.get("reply_to")
                 
                 print(f"[DEBUG] {self.name}: Task details:")
                 print(f"  - Type: {task_type}")

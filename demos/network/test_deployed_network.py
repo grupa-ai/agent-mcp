@@ -99,6 +99,13 @@ async def main():
     print("Adding agents to group...")
     group.add_agents([researcher, analyst])
     
+    print("\n=== Creating Proxy Agent ===")
+    # Create and add proxy for EmailAgent
+    from agent_mcp.proxy_agent import ProxyAgent
+    email_proxy = ProxyAgent(name="EmailProxy", client_mode=True)
+    await email_proxy.connect_to_remote_agent("EmailAgent", group.server_url)
+    group.add_agents([email_proxy])
+    
     # Connect everyone to the deployed server
     print("\n=== Connecting to Deployed Server ===")
     try:
@@ -141,6 +148,19 @@ async def main():
                 3. Future market potential and timeline
                 Use your search capabilities to find supporting data.""",
                 "depends_on": ["initial_research"]
+            },
+            {
+                "task_id": "send_report",
+                "agent": "EmailAgent",
+                "description": "Send the research findings via email",
+                "content": {
+                    "email_params": {
+                        "to_address": "samuel@grupa.io",
+                        "subject": "Quantum ML Research Report",
+                        "body": "Here are our findings on quantum ML..."
+                    }
+                },
+                "depends_on": ["market_analysis"]
             }
         ]
     }

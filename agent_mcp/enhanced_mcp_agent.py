@@ -3,6 +3,7 @@ Enhanced MCP Agent with client/server capabilities.
 """
 
 import asyncio
+import collections
 from typing import Optional, Dict, Any, List
 from .mcp_agent import MCPAgent
 from .mcp_transport import MCPTransport
@@ -25,6 +26,7 @@ class EnhancedMCPAgent(MCPAgent):
         self.task_queue = asyncio.Queue()
         self.task_results = {}
         self.task_dependencies = {}
+        self._pending_tasks = {}
         self._task_processor = None
         self._message_processor = None
         
@@ -125,7 +127,7 @@ class EnhancedMCPAgent(MCPAgent):
             return {"status": "skipped", "message": "Task already completed"}
         # --- End Idempotency Check ---
         
-        task_id = message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
+        task_id = message.get("task_id") or message.get("content", {}).get("task_id")
         depends_on = message.get("depends_on", [])
         message_id = message.get("message_id")  # Get the message ID for acknowledgment
         
@@ -191,9 +193,8 @@ class EnhancedMCPAgent(MCPAgent):
             print(f"[DEBUG] {self.name}: Found dependent tasks for {task_id}")
             
             # Get tasks that depend on this one
-            dependent_tasks = self.task_dependencies[task_id]
-            if not isinstance(dependent_tasks, list):
-                dependent_tasks = [dependent_tasks]
+            task_ids = self.task_dependencies[task_id]
+            dependent_tasks = [self._pending_tasks[tid] for tid in task_ids if tid in self._pending_tasks]
             
             # Remove this task from dependencies
             del self.task_dependencies[task_id]
@@ -214,28 +215,36 @@ class EnhancedMCPAgent(MCPAgent):
                     if dep not in self.task_results:
                         all_deps_met = False
                         # Re-add to dependencies since not all deps are met
+                        task_id = dependent_task.get('task_id')
+                        if not task_id:
+                            print(f"[WARNING] {self.name}: Skipping task without task_id: {dependent_task}")
+                            continue
+                        # Add task_id to dependencies and store full task info
                         if dep not in self.task_dependencies:
-                            self.task_dependencies[dep] = []
-                        self.task_dependencies[dep].append(dependent_task)
+                            self.task_dependencies[dep] = set()
+                        self.task_dependencies[dep].add(task_id)
+                        self._pending_tasks[task_id] = dependent_task
                         break
                 
                 if all_deps_met:
-                    print(f"[DEBUG] {self.name}: All dependencies met for task {dependent_task.get('task_id')}")
-                    # Forward task to agent
-                    # Ensure task has proper structure
-                    task_to_assign = {
-                        "task_id": dependent_task.get("task_id"),
-                        "description": dependent_task.get("description"),
-                        "type": "task",
-                        "depends_on": dependencies
-                    }
-                    await self.assign_task(dependent_task["agent"], task_to_assign)
+                    task_id = dependent_task.get('task_id')
+                    if task_id in self._pending_tasks:
+                        full_task = self._pending_tasks[task_id]
+                        print(f"[DEBUG] {self.name}: All dependencies met for task {task_id}")
+                        # Forward task to agent
+                        # Ensure task has proper structure
+                        task_to_assign = {
+                            "task_id": task_id,
+                            "description": full_task.get("description"),
+                            "type": "task",
+                            "depends_on": dependencies,
+                            "content": full_task.get("content", {})
+                        }
+                        await self.assign_task(full_task["agent"], task_to_assign)
+                        # Clean up
+                        del self._pending_tasks[task_id]
                 for dep in dependencies:
                     if dep not in self.task_results:
-                        # Initialize list if this is first dependent task
-                        if dep not in self.task_dependencies:
-                            self.task_dependencies[dep] = []
-                            
                         # Extract fields from content if present
                         content = dependent_task.get("content", {})
                         task_id = content.get("task_id") or dependent_task.get("task_id")
@@ -258,7 +267,13 @@ class EnhancedMCPAgent(MCPAgent):
                             },
                             "agent": agent
                         }
-                        self.task_dependencies[dep].append(validated_task_info)
+                        task_id = validated_task_info.get('task_id')
+                        if task_id:
+                            if dep not in self.task_dependencies:
+                                self.task_dependencies[dep] = set()
+                            self.task_dependencies[dep].add(task_id)
+                            # Store full task info
+                            self._pending_tasks[task_id] = validated_task_info
         
         # Acknowledge the task result if we have the original message ID
         if original_message_id and self.transport:
@@ -369,8 +384,8 @@ class EnhancedMCPAgent(MCPAgent):
                 print(f"{self.name}: Processing task: {task}")
                 
                 # Get task description and task_id
-                task_desc = task.get("content", {}).get("description") if isinstance(task.get("content"), dict) else task.get("description", "")
-                task_id = task.get("content", {}).get("task_id") if isinstance(task.get("content"), dict) else task.get("task_id")
+                task_desc = task.get("description") or task.get("content", {}).get("description") if isinstance(task.get("content"), dict) else task.get("description", "")
+                task_id = task.get("task_id") or task.get("content", {}).get("task_id") if isinstance(task.get("content"), dict) else task.get("task_id")
                 message_id = task.get('message_id')
 
                 if not task_desc or not task_id:

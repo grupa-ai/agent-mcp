@@ -82,7 +82,7 @@ class MCPAgentDecorator:
                     'func': bound_tool_func,
                     'description': tool_desc
                 }
-
+                
     async def connect(self): # 'self' here refers to the instance of the decorated class
         """Connects the decorated agent: registers and starts transport polling."""
         if not hasattr(self, 'transport') or self.transport is None:
@@ -142,6 +142,7 @@ class MCPAgentDecorator:
                     self.transport.auth_token = token 
                     print(f"Token set for agent {self._registered_agent_id}") 
                     
+                    # Connect and start polling for messages
                     await self.transport.connect(agent_name=self._registered_agent_id, token=token)
                     
             except aiohttp.ClientResponseError as e:
@@ -176,14 +177,14 @@ class MCPAgentDecorator:
         else:
             raise RuntimeError("Transport not initialized, cannot send message.")
         
-    async def receive_message(self, timeout: float = 1.0) -> Tuple[Optional[Dict[str, Any]], Optional[str]]: # 'self' here refers to the instance
+    async def receive_message(self, timeout: float = 1.0) -> Tuple[Optional[Dict[str, Any]], Optional[str]]: 
         """Receives a message via the transport layer."""
         if hasattr(self, 'transport') and self.transport:
              return await self.transport.receive_message(timeout=timeout)
         else:
              logger.warning("Attempted to receive message but transport was not initialized.")
              return None, None
-
+             
     # This method makes the decorator work on classes
     def __call__(self, Cls): 
         # Modify the class's __init__ to include our initialization
