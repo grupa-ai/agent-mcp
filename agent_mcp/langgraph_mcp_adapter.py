@@ -4,15 +4,21 @@ LangGraph MCP Adapter - Adapt LangGraph agents to work with MCP.
 This module provides an adapter that allows LangGraph agents to work within
 the Model Context Protocol (MCP) framework, enabling them to collaborate
 with agents from other frameworks like Autogen and CrewAI.
+
+Supports both workflow-based and tool-based LangGraph agents:
+1. Workflow-based: Uses StateGraph for defining agent behavior
+2. Tool-based: Uses LangChain tools and agent executors
 """
 
 import asyncio
-from typing import Dict, Any, Optional, Callable, List
+import traceback
+from typing import Dict, Any, Optional, Callable, List, Union
 from langchain.tools import BaseTool
 from langchain.agents import AgentExecutor
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_openai_tools_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langgraph.graph import StateGraph
 from .mcp_agent import MCPAgent
 from .mcp_transport import HTTPTransport
 from fastapi import FastAPI, Request
@@ -24,17 +30,20 @@ class LangGraphMCPAdapter(MCPAgent):
     """
     Adapter for LangGraph agents to work with MCP.
     
-    This adapter wraps LangGraph tools and agents to make them compatible with the MCP framework,
-    allowing them to communicate with other agents through the transport layer.
+    This adapter supports both:
+    1. Workflow-based agents using StateGraph
+    2. Tool-based agents using LangChain tools
     """
     
     def __init__(
         self,
         name: str,
-        tools: List[BaseTool],
+        workflow: Optional[StateGraph] = None,
+        tools: Optional[List[BaseTool]] = None,
         process_message: Optional[Callable] = None,
         transport: Optional[HTTPTransport] = None,
         client_mode: bool = True,
+        state_type: Optional[type] = None,
         **kwargs
     ):
         """
@@ -42,32 +51,42 @@ class LangGraphMCPAdapter(MCPAgent):
         
         Args:
             name: Name of the agent
-            tools: List of tools for the agent to use
+            workflow: Optional StateGraph workflow for workflow-based agents
+            tools: Optional list of tools for tool-based agents
             process_message: Optional custom message processing function
             transport: Optional transport layer
             client_mode: Whether to run in client mode
             **kwargs: Additional arguments to pass to MCPAgent
         """
-        super().__init__(name=name, **kwargs)
+        # Initialize MCPAgent with transport
+        super().__init__(name=name, transport=transport, **kwargs)
         
-        # Create LangGraph agent
-        llm = ChatOpenAI(temperature=0)
-        
-        # Create prompt for the agent
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful AI assistant that can use tools to accomplish tasks."),
-            ("human", "{input}"),
-            MessagesPlaceholder(variable_name="agent_scratchpad")
-        ])
-        
-        # Create agent with tools and prompt
-        agent = create_openai_tools_agent(llm, tools, prompt)
-        
-        self.executor = AgentExecutor.from_agent_and_tools(
-            agent=agent,
-            tools=tools,
-            handle_parsing_errors=True
-        )
+        if workflow and tools:
+            raise ValueError("Cannot specify both workflow and tools. Choose one pattern.")
+            
+        if workflow:
+            # Workflow-based agent
+            self.workflow = workflow
+            self.state_type = state_type
+            self.executor = None
+        elif tools:
+            # Tool-based agent
+            llm = ChatOpenAI(temperature=0)
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are a helpful AI assistant that can use tools to accomplish tasks."),
+                ("human", "{input}"),
+                MessagesPlaceholder(variable_name="agent_scratchpad")
+            ])
+            agent = create_openai_tools_agent(llm, tools, prompt)
+            self.executor = AgentExecutor.from_agent_and_tools(
+                agent=agent,
+                tools=tools,
+                handle_parsing_errors=True
+            )
+            self.workflow = None
+            self.state_type = None
+        else:
+            raise ValueError("Must specify either workflow or tools")
         
         self.custom_process_message = process_message
         self.transport = transport
@@ -147,16 +166,53 @@ class LangGraphMCPAdapter(MCPAgent):
                 traceback.print_exc()
                 await asyncio.sleep(1)
                 
+    async def execute_task(self, task: Dict[str, Any]):
+        """Execute a task using either workflow or executor"""
+        try:
+            if self.workflow:
+                # Always initialize state as a dictionary for LangGraph workflows here.
+                # LangGraph itself handles the state type defined in StateGraph().
+                state_dict = {"message": task, "result": None}
+                
+                # Run workflow
+                try:
+                    print(f"{self.name}: Running workflow with initial state_dict: {state_dict}")
+                    # Compile the workflow if not already compiled
+                    if not hasattr(self, '_compiled_workflow'):
+                        self._compiled_workflow = self.workflow.compile()
+                    # Pass the initial state dict directly
+                    final_state = await self._compiled_workflow.ainvoke(state_dict)
+                    # Use the workflow's final state
+                    result = final_state
+                    print(f"{self.name}: Workflow finished with final_state: {result}") 
+                    return {"result": result, "error": None}
+                except Exception as e:
+                    print(f"Error running workflow: {str(e)}")
+                    import traceback
+                    traceback.print_exc() 
+                    return {"result": None, "error": str(e)}
+            elif self.executor:
+                # Run with executor
+                result = await self.executor.arun(task)
+                return {"result": result, "error": None}
+            else:
+                return {"result": None, "error": "No workflow or executor configured"}
+        except Exception as e:
+            return {
+                "result": f"[FROM EXECUTE_TASK] Error executing task: {str(e)}",
+                "error": True
+            }
+            
     async def process_tasks(self):
-        """Process tasks from the queue using the agent executor"""
+        """Process tasks from the queue"""
         while True:
             try:
                 task = await self.task_queue.get()
                 
-                # Extract task details from content or root level
+                # Extract task details
                 task_content = task.get('content', task.get('task', {}))
-                task_id = task_content.get('task_id')
-                task_description = task_content.get('description')
+                task_id = task.get('task_id') or task_content.get('task_id')
+                task_description = task.get('description') or task_content.get('description')
                 message_id = task.get('message_id')
                 reply_to = task.get('reply_to')
                 
@@ -168,25 +224,24 @@ class LangGraphMCPAdapter(MCPAgent):
                 print(f"\n{self.name}: Processing task {task_id} with message_id {message_id}")
                 
                 try:
-                    # Execute the task using the agent executor
-                    result = await self.execute_task(task_description)
+                    # Execute the task
+                    result = await self.execute_task(task_content)
                     
-                    # --- Mark task completed (Uses Base Class Method) ---
+                    # Mark task completed
                     super()._mark_task_completed(task_id)
-                    # --- End mark task completed ---
                     
                     # Send result back if reply_to is specified
-                    if 'reply_to' in task:
-                        reply_url = task['reply_to']
-                        print(f"{self.name}: Sending result back to {reply_url}")
+                    if reply_to:
+                        print(f"{self.name}: Sending result back to {reply_to}")
                         await self.transport.send_message(
-                            reply_url,
+                            reply_to,
                             {
                                 "type": "task_result",
                                 "task_id": task_id,
-                                "result": result,
+                                "result": result['result'],
                                 "sender": self.name,
-                                "original_message_id": message_id  # Include original message ID
+                                "original_message_id": message_id,
+                                "error": result['error']
                             }
                         )
                         print(f"{self.name}: Result sent successfully")
@@ -198,13 +253,12 @@ class LangGraphMCPAdapter(MCPAgent):
                         else:
                             print(f"{self.name}: No message_id for task {task_id}, cannot acknowledge")
                 except Exception as e:
-                    print(f"{self.name}: Error executing task: {e}")
+                    print(f"{self.name}: Error processing task: {e}")
                     traceback.print_exc()
                     
-                    # Send error result back if reply_to is specified
-                    if 'reply_to' in task:
+                    if reply_to:
                         await self.transport.send_message(
-                            task['reply_to'],
+                            reply_to,
                             {
                                 "type": "task_result",
                                 "task_id": task_id,
@@ -222,22 +276,6 @@ class LangGraphMCPAdapter(MCPAgent):
                 traceback.print_exc()
                 await asyncio.sleep(1)
                 
-    async def execute_task(self, task_description: str) -> str:
-        """
-        Execute a task using the agent executor.
-        
-        Args:
-            task_description: Description of the task to execute
-            
-        Returns:
-            The result of the task execution
-        """
-        try:
-            result = await self.executor.ainvoke({"input": task_description})
-            return str(result.get("output", "No output"))
-        except Exception as e:
-            return f"Error executing task: {e}"
-            
     def run(self):
         """Start the message and task processors"""
         if not self.transport:

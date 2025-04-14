@@ -188,6 +188,47 @@ Works seamlessly with:
 
 ## 📚 Examples
 
+**🚀 Quick Demos: See AgentMCP in Action!**
+
+These first two examples show the core power of AgentMCP in just a few lines. See how easy it is to connect agents and get them collaborating on tasks!
+
+### 1. Simple Multi-Agent Chat (Group Chat)
+
+Watch two different agents (one Autogen, one LangGraph) chat seamlessly using AgentMCP.
+
+**What it shows:**
+- Basic agent-to-agent communication across frameworks.
+- How `@mcp_agent` instantly connects agents to the network.
+- The foundation of collaborative work.
+
+**Run it:**
+```bash
+python demos/basic/simple_chat.py
+```
+
+### 2. Email Agent Task (Networked Task Execution)
+
+See an agent (`EmailAgent`) get called upon by another agent through the MACNet to perform a real task: sending an email! This uses the `HeterogeneousGroupChat` to manage the interaction.
+
+**What it shows:**
+- An agent becoming an MCP participant.
+- Joining the MACNet global network.
+- Receiving and executing a task (sending an email) via the network.
+- How AgentMCP orchestrates real-world collaboration.
+
+**Files Involved:**
+- `demos/network/email_agent.py`: The agent performing the work.
+- `demos/network/test_deployed_network.py`: The script initiating the task.
+- `agent_mcp/heterogeneous_group_chat.py`: The underlying mechanism managing the interaction.
+
+**Run it:**
+*Ensure you have set your SMTP environment variables first (see `email_agent.py`).*
+```bash
+python demos/network/test_deployed_network.py
+```
+
+**--- More Examples ---**
+
 ### 🤖 Add AI to Any Agent
 
 ```python
@@ -218,7 +259,7 @@ results = await my_agent.collaborate({
 })
 ```
 
-## 🔗 Network API
+## Network API
 
 ### 🌐 Global Agent Network (Multi-Agent Collaboration Network aka MAC Network or MacNet)
 
