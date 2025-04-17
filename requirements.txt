@@ -1,5 +1,6 @@
 autogen
 langchain
+camel-ai
 langchain-openai
 langchain-community
 crewai
