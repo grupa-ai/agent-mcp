@@ -178,7 +178,8 @@ class LangchainMCPAdapter(MCPAgent):
                 try:
                     print(f"[DEBUG] {self.name}: Calling agent_executor.arun with task description")
                     # Execute the task using the Langchain agent executor
-                    result = await self.agent_executor.arun(task_desc)
+                    #result = await self.agent_executor.arun(task_desc)
+                    result = await self.agent_executor.ainvoke({"input": task_desc})
                     print(f"[DEBUG] {self.name}: Agent execution completed. Result type: {type(result)}")
                 except Exception as e:
                     print(f"[ERROR] {self.name}: Agent execution failed: {e}")
