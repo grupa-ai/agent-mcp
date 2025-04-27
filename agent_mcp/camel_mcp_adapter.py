@@ -71,12 +71,14 @@ class CamelMCPAdapter(MCPAgent):
         """Handle incoming messages from other agents"""
         # First check if type is directly in the message
         msg_type = message.get("type")
+        logger.info(f"[{self.name}] Raw message: {message}")
 
         # If not, check if it's inside the content field
         if not msg_type and "content" in message and isinstance(message["content"], dict):
             msg_type = message["content"].get("type")
 
-        sender = message.get("sender", "Unknown")
+        # Extract sender with nested JSON support
+        sender = self._extract_sender(message)
         task_id = message.get("task_id") or message.get("content", {}).get("task_id") if isinstance(message.get("content"), dict) else message.get("task_id")
         logger.info(f"[{self.name}] Received message (ID: {message_id}) of type '{msg_type}' from {sender} (Task ID: {task_id})")
 
@@ -122,12 +124,60 @@ class CamelMCPAdapter(MCPAgent):
         elif msg_type == "task_result":
             # Received a result, treat it as the next step in the conversation
             result_content = message.get("result")
-            original_task_id = message.get("task_id") # ID of the task this is a result for
+            
+            # --- Robust extraction for various formats ---
+            content = message.get("content")
+            if result_content is None and content is not None:
+                # 1. Try content["result"]
+                if isinstance(content, dict) and "result" in content:
+                    result_content = content["result"]
+                # 2. Try content["text"] as JSON
+                elif isinstance(content, dict) and "text" in content:
+                    text_val = content["text"]
+                    if isinstance(text_val, str):
+                        try:
+                            parsed = json.loads(text_val)
+                            if isinstance(parsed, dict) and "result" in parsed:
+                                result_content = parsed["result"]
+                        except Exception:
+                            pass
+                # 3. Try content itself as JSON string
+                elif isinstance(content, str):
+                    try:
+                        parsed = json.loads(content)
+                        if isinstance(parsed, dict) and "result" in parsed:
+                            result_content = parsed["result"]
+                    except Exception:
+                        pass
+                # 4. Fallback: use content["text"] as plain string
+                if result_content is None and isinstance(content, dict) and "text" in content:
+                    result_content = content["text"]
+
+            # Add direct parsing of content["text"] structure
+            if isinstance(result_content, str):
+                try:
+                    text_content = json.loads(result_content)
+                    if isinstance(text_content, dict):
+                        result_content = text_content
+                except json.JSONDecodeError:
+                    pass
+
+            # Handle JSON string content
+            if isinstance(result_content, str):
+                try:
+                    result_content = json.loads(result_content)
+                except json.JSONDecodeError:
+                    pass
+
+            original_task_id = (
+                (result_content.get("task_id") if isinstance(result_content, dict) else None)
+                or message.get("task_id")
+            )
             logger.info(f"[{self.name}] Received task_result from {sender} for task {original_task_id}. Content: '{str(result_content)[:100]}...'")
 
             if not result_content:
                 logger.warning(f"[{self.name}] Received task_result from {sender} with empty content.")
-                 # Acknowledge the result message even if content is empty
+                # Acknowledge the result message even if content is empty
                 if message_id and self.transport:
                     asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
                 return
@@ -138,8 +188,8 @@ class CamelMCPAdapter(MCPAgent):
                 "type": "task", # Still a task for this agent to process
                 "task_id": new_task_id,
                 "description": str(result_content), # The result becomes the new input/description
-                "reply_to": sender, # Reply back to the agent that sent the result
-                "sender": self.name, # This agent is the conceptual sender of this internal task
+                "reply_to": message.get("reply_to") or result_content.get("reply_to"),
+                "sender": sender, # This agent is the conceptual sender of this internal task
                 "message_id": message_id # Carry over original message ID for acknowledgement
             }
 
@@ -159,8 +209,8 @@ class CamelMCPAdapter(MCPAgent):
         while True:
             try:
                 logger.debug(f"[{self.name}] Waiting for message from transport...")
-                # Pass agent name to receive_message
-                message, message_id = await self.transport.receive_message(agent_name=self.name)
+                # Get message from transport (without agent_name parameter)
+                message, message_id = await self.transport.receive_message()
                 logger.debug(f"[{self.name}] Received raw message from transport: {message} (ID: {message_id})")
 
 
@@ -311,6 +361,7 @@ class CamelMCPAdapter(MCPAgent):
                                 "task_id": task_id,
                                 "result": result_str,
                                 "sender": self.name,
+                                "reply_to": self.name,  # Add this so the receiving agent knows where to send follow-up messages
                                 "original_message_id": message_id # Include original message ID for tracing/ack
                             }
                         )

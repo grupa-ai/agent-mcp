@@ -630,3 +630,29 @@ class MCPAgent(ConversableAgent):
             self.completed_task_ids.add(task_id)
         else:
              logger.warning(f"[{self.name}] Attempted to mark task completed, but task_id was None.")
+
+    def _extract_sender(self, message: Dict) -> str:
+        """Centralized sender extraction with nested JSON support
+        TODO: Migrate to MessageSchema validation (GitHub Issue #1?)
+        """
+        # First check root level
+        if sender := message.get('sender'):
+            return sender
+        
+        content = message.get('content', {})
+        
+        # Check nested JSON in content.text
+        if isinstance(content, dict):
+            try:
+                if text_content := content.get('text'):
+                    parsed = json.loads(text_content)
+                    if sender := parsed.get('sender'):
+                        return sender
+            except json.JSONDecodeError:
+                pass
+            
+            # Fallback to content.sender
+            if sender := content.get('sender'):
+                return sender
+        
+        return "Unknown"

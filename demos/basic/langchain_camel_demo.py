@@ -16,15 +16,14 @@ import logging
 import uuid
 from dotenv import load_dotenv
 from typing import Dict, Any
+import time
 
 # MCP Components
 from agent_mcp.mcp_agent import MCPAgent # Base class, maybe not needed directly
 from agent_mcp.langchain_mcp_adapter import LangchainMCPAdapter
 from agent_mcp.camel_mcp_adapter import CamelMCPAdapter
-# Remove Firestore import
-# from agent_mcp.mcp_transport import FirestoreMCPTransport
-# Import the base transport class for inheritance
-from agent_mcp.mcp_transport import MCPTransport
+from agent_mcp.mcp_transport import HTTPTransport
+from agent_mcp.mcp_decorator import mcp_agent, DEFAULT_MCP_SERVER
 
 # Langchain Components
 from langchain_openai import ChatOpenAI
@@ -50,99 +49,6 @@ LANGCHAIN_AGENT_NAME = "LangchainDemoAgent"
 CAMEL_AGENT_NAME = "CamelDemoAgent"
 MODEL_NAME = "gpt-4o-mini" # Or "gpt-4", "gpt-3.5-turbo", etc.
 SENDER_NAME = "DemoRunner" # Represents the entity sending initial tasks
-
-# --- InMemoryTransport Implementation ---
-
-class InMemoryTransport(MCPTransport):
-    """A simple in-memory transport for local agent communication."""
-    def __init__(self):
-        self._queues: Dict[str, asyncio.Queue] = {}
-        self._agent_names: Dict[asyncio.Queue, str] = {} # Map queue back to agent name for receive
-        self._message_store: Dict[str, Dict[str, Any]] = {} # message_id -> message content
-        self._lock = asyncio.Lock()
-        logger.info("InMemoryTransport initialized.")
-
-    async def connect(self, agent_name: str):
-        """Register an agent and create its message queue."""
-        async with self._lock:
-            if agent_name not in self._queues:
-                queue = asyncio.Queue()
-                self._queues[agent_name] = queue
-                self._agent_names[queue] = agent_name
-                logger.info(f"[InMemoryTransport] Agent '{agent_name}' connected.")
-            else:
-                logger.warning(f"[InMemoryTransport] Agent '{agent_name}' already connected.")
-
-    async def disconnect(self, agent_name: str):
-        """Unregister an agent and remove its queue."""
-        async with self._lock:
-            if agent_name in self._queues:
-                queue = self._queues.pop(agent_name)
-                del self._agent_names[queue]
-                # Optionally clear any remaining messages in the queue?
-                logger.info(f"[InMemoryTransport] Agent '{agent_name}' disconnected.")
-            else:
-                logger.warning(f"[InMemoryTransport] Agent '{agent_name}' not found for disconnect.")
-
-    async def send_message(self, target: str, message: Dict[str, Any]):
-        """Send a message to a target agent's queue."""
-        async with self._lock:
-            if target in self._queues:
-                msg_id = f"mem_{uuid.uuid4()}"
-                # Store the message content associated with the ID
-                self._message_store[msg_id] = message.copy()
-                # Put the ID onto the target queue
-                await self._queues[target].put(msg_id)
-                sender = message.get('sender', 'UnknownSender')
-                logger.info(f"[InMemoryTransport] Message queued for '{target}' from '{sender}'. ID: {msg_id}. Content: {message}")
-                return {"status": "queued", "message_id": msg_id}
-            else:
-                logger.error(f"[InMemoryTransport] Target agent '{target}' not connected. Cannot send message.")
-                return {"status": "error", "message": f"Target agent '{target}' not found"}
-
-    async def receive_message(self, agent_name: str):
-        """Receive a message ID from the agent's queue and return the message content."""
-        if agent_name not in self._queues:
-            logger.error(f"[InMemoryTransport] Agent '{agent_name}' not connected. Cannot receive.")
-            # Wait indefinitely or raise error? Let's wait shortly and return None
-            await asyncio.sleep(0.1)
-            return None, None
-
-        queue = self._queues[agent_name]
-        try:
-            # Wait for a message ID with a timeout to prevent hanging forever if no message arrives
-            # Or maybe adapters handle timeout? Let's wait indefinitely for now.
-            logger.debug(f"[InMemoryTransport] Agent '{agent_name}' waiting for message...")
-            msg_id = await queue.get()
-            queue.task_done() # Mark task as done for the queue
-
-            async with self._lock:
-                message_content = self._message_store.get(msg_id)
-
-            if message_content:
-                logger.info(f"[InMemoryTransport] Agent '{agent_name}' received message ID '{msg_id}'. Content: {message_content}")
-                return message_content, msg_id
-            else:
-                logger.error(f"[InMemoryTransport] Agent '{agent_name}' received unknown message ID '{msg_id}'.")
-                return None, None
-
-        except asyncio.CancelledError:
-            logger.info(f"[InMemoryTransport] Receive task for '{agent_name}' cancelled.")
-            return None, None
-        except Exception as e:
-             logger.error(f"[InMemoryTransport] Error receiving message for '{agent_name}': {e}", exc_info=True)
-             return None, None
-
-
-    async def acknowledge_message(self, agent_id: str, message_id: str):
-        """Acknowledge receipt/processing of a message (removes from store)."""
-        async with self._lock:
-            if message_id in self._message_store:
-                del self._message_store[message_id]
-                logger.info(f"[InMemoryTransport] Message '{message_id}' acknowledged by agent '{agent_id}'.")
-            else:
-                logger.warning(f"[InMemoryTransport] Message '{message_id}' not found for acknowledgement by agent '{agent_id}'.")
-
 
 # --- Agent Setup ---
 
@@ -227,40 +133,58 @@ async def main():
     langchain_executor = setup_langchain_agent()
     camel_chat_agent = setup_camel_agent()
 
-    # Initialize Transport (Using InMemoryTransport)
-    logger.info("Initializing InMemoryTransport...")
-    # Create ONE instance to be shared by all adapters in this process
-    transport = InMemoryTransport()
-
     # Adapters need to connect explicitly using the transport's connect method
     # The run method in the adapters likely expects the transport to be ready
     # Let's connect them before initializing the adapters that use them.
     # Although, the adapters themselves might call connect... let's see.
     # If the adapters call connect, we don't need to do it here.
-    # Let's assume the adapters handle calling connect.
+    # Let's assume the adapters handle calling connect. 
+
+    transport = HTTPTransport.from_url(DEFAULT_MCP_SERVER)
 
     # Initialize Adapters
     logger.info("Initializing Adapters...")
     langchain_adapter = LangchainMCPAdapter(
         name=LANGCHAIN_AGENT_NAME,
         agent_executor=langchain_executor,
-        transport=transport, # Pass the shared transport instance
-        system_message=f"I am the {LANGCHAIN_AGENT_NAME} adapter." # Optional: Adapter specific message
+        transport=transport,
+        system_message=f"""I am the {LANGCHAIN_AGENT_NAME}. Let's have focused discussion about AI, multi-agent systems, and multi-agent collaboration."""
     )
 
     camel_adapter = CamelMCPAdapter(
         name=CAMEL_AGENT_NAME,
+        transport=transport,
         camel_agent=camel_chat_agent,
-        transport=transport, # Pass the shared transport instance
-        system_message=f"I am the {CAMEL_AGENT_NAME} adapter. lets have a conversation about agents and their capabilities." # Optional: Adapter specific message
+        system_message=f"""I am the {CAMEL_AGENT_NAME}. Engage in substantive dialogue about AI agents."""
     )
 
-    # Explicitly connect agents to the InMemoryTransport
-    logger.info(f"Connecting {LANGCHAIN_AGENT_NAME} to transport...")
-    await transport.connect(LANGCHAIN_AGENT_NAME)
-    logger.info(f"Connecting {CAMEL_AGENT_NAME} to transport...")
-    await transport.connect(CAMEL_AGENT_NAME)
-    logger.info("Agents connected to transport.")
+    # Helper function to register an agent and extract token
+    import json
+    async def register_and_get_token(agent, agent_name):
+        logger.info(f"Registering {agent_name}...")
+        try:
+            registration = await transport.register_agent(agent)
+            body = json.loads(registration.get('body', '{}'))
+            token = body.get('token')
+            if token:
+                logger.info(f"Registration successful for {agent_name}")
+                return token
+            logger.error(f"No token in response: {body}")
+        except Exception as e:
+            logger.error(f"Registration error for {agent_name}: {e}")
+        return None
+
+    # Register agents and get tokens
+    langchain_token = await register_and_get_token(langchain_adapter, LANGCHAIN_AGENT_NAME)
+    camel_token = await register_and_get_token(camel_adapter, CAMEL_AGENT_NAME)
+    
+    if not (langchain_token and camel_token):
+        logger.error("Failed to register one or both agents")
+        return
+
+    # Now connect with both agent_name and token parameters
+    await transport.connect(agent_name=LANGCHAIN_AGENT_NAME, token=langchain_token)
+    await transport.connect(agent_name=CAMEL_AGENT_NAME, token=camel_token)
 
     # Start Adapters in background tasks
     lc_task = asyncio.create_task(langchain_adapter.run(), name=f"{LANGCHAIN_AGENT_NAME}_run")
@@ -273,46 +197,70 @@ async def main():
 
     # --- Initiate Conversation ---
     initial_task_id = f"conv_start_{uuid.uuid4()}"
-    initial_message_content = (
-        f"Hello {CAMEL_AGENT_NAME}, I am {LANGCHAIN_AGENT_NAME}. "
-        f"Let's have a brief chat about the challenges of building multi-agent systems."
-    )
+    initial_message_content = """Let's explore multi-agent coordination patterns through 3-5 focused exchanges. \
+Please aim to: \
+1. Identify key challenges\
+2. Discuss 2-3 solutions  \
+3. Propose conclusion when we've covered substantive ground"""
 
     initial_task = {
         "type": "task",
         "task_id": initial_task_id,
         "description": initial_message_content,
         "sender": LANGCHAIN_AGENT_NAME, # Langchain starts
-        "reply_to": LANGCHAIN_AGENT_NAME # Camel should reply back to Langchain
+        "reply_to": CAMEL_AGENT_NAME # Send responder as CamelAgent
     }
+
+    # Replace conversation timer with hybrid limits
+    MAX_DURATION = 60  # seconds (1 minute max)
+    MAX_TURNS = 10
+    TERMINATION_PHRASES = [
+        "wrap up this discussion", 
+        "finalize our discussion",
+        "conclusion reached",
+        "summary of key points"
+    ]
 
     try:
         logger.info(f"[{LANGCHAIN_AGENT_NAME}] Sending initial message to {CAMEL_AGENT_NAME}...")
         await transport.send_message(target=CAMEL_AGENT_NAME, message=initial_task)
 
-        # Let the conversation run for a while (agents handle turns internally)
-        conversation_duration = 60 # seconds
-        logger.info(f"Conversation initiated. Waiting {conversation_duration} seconds for interaction (check logs)...")
-        await asyncio.sleep(conversation_duration)
-        logger.info("Finished conversation time.")
+        start_time = time.monotonic()
+        turn_count = 0
 
+        while (time.monotonic() - start_time) < MAX_DURATION and turn_count < MAX_TURNS:
+            try:
+                msg, message_id = await asyncio.wait_for(transport.receive_message(), timeout=15)
+                if msg:
+                    content = msg.get('content', {}).get('text', '').lower()
+                    if any(phrase in content for phrase in TERMINATION_PHRASES):
+                        logger.info("Natural conversation conclusion detected")
+                        break
+                    turn_count += 1
+            except asyncio.TimeoutError:
+                logger.info("No message received in 15 seconds")
+                break
+
+        logger.info(f"Conversation ended after {turn_count} turns")
     except Exception as e:
         logger.error(f"An error occurred during conversation initiation or waiting: {e}", exc_info=True)
 
-    finally:
-        # Stop adapters and transport
-        logger.info("Shutting down adapters...")
-        await langchain_adapter.stop()
-        await camel_adapter.stop()
-
-        # Wait for run tasks to complete cancellation
-        logger.info("Waiting for adapter tasks to finish...")
+    finally: 
+        logger.info("Initiating cleanup sequence...")
+        
+        # Cancel agent tasks first
+        lc_task.cancel()
+        camel_task.cancel()
+        
+        # Stop transport before awaiting
+        await transport.stop()
+        
+        # Then await tasks
         await asyncio.gather(lc_task, camel_task, return_exceptions=True)
-
-        # No explicit transport disconnect needed for InMemory, but good practice if base class had it
-        # logger.info("Disconnecting transport...")
-        # await transport.disconnect(LANGCHAIN_AGENT_NAME) # Adapters might do this in stop()
-        # await transport.disconnect(CAMEL_AGENT_NAME)
+        
+        # Finally disconnect transport
+        await transport.disconnect()
+        logger.info("Cleanup completed successfully")
         logger.info("Demo finished.")
 
 if __name__ == "__main__":
