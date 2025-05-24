@@ -10,3 +10,6 @@ aiohttp==3.9.1
 pyjwt>=2.3.0
 mangum>=0.17.0 # Added back
 duckduckgo-search==4.1.1
+camel-ai
+pandas
+python-dateutil

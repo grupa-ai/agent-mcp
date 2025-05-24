@@ -15,6 +15,7 @@ from agent_mcp import mcp_agent
 from agent_mcp.langgraph_mcp_adapter import LangGraphMCPAdapter
 from langgraph.graph import StateGraph, START, END
 from dotenv import load_dotenv
+import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -84,7 +85,9 @@ class EmailAgent(LangGraphMCPAdapter):
             params = content.get('email_params', content)
             to_address = params.get('to_address')
             subject = params.get('subject')
-            body = params.get('body')
+            body = params.get('body') or content.get('content')
+            body = re.sub(r'^Subject:.*?\n', '', body, flags=re.IGNORECASE).strip()
+
             cc_address = params.get('cc_address')
             
             print(f"Extracted params: to={to_address}, subject={subject}, body={body}, cc={cc_address}")
