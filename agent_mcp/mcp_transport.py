@@ -630,7 +630,7 @@ class HTTPTransport(MCPTransport):
         self.server_thread = Thread(target=run_server, daemon=True)
         self.server_thread.start()
         
-    def stop(self):
+    async def stop(self):
         """Stops the local HTTP server (if running).
         
         This method gracefully shuts down the local HTTP server when operating in
@@ -639,12 +639,18 @@ class HTTPTransport(MCPTransport):
         The method ensures proper cleanup of server resources and thread termination.
         """
         if self.is_remote:
-             logger.info(f"[{self.agent_name or 'Unknown'}] In remote mode. Call disconnect() to stop polling.")
-             pass 
+            logger.info(f"[{self.agent_name or 'Unknown'}] In remote mode. Call disconnect() to stop polling.")
+            return 
+        # Close client session if exists
+        if hasattr(self, '_client_session') and self._client_session:
+            await self._client_session.close()
+            self._client_session = None
+    
         elif self.server_thread:
             logger.info(f"Stopping local server thread (implementation pending)...")
-            pass
-            
+            self.server_thread = None  # Important for GC
+
+        
     def set_message_handler(self, handler: Callable):
         """Set a handler for incoming messages.
         

@@ -103,13 +103,12 @@ async def main():
     
     # Create and add proxy for EmailAgent
     from agent_mcp.proxy_agent import ProxyAgent
-     
     # Create and add proxy for Influencer
     influencer_proxy = ProxyAgent(name="Influenxers", client_mode=True)
     await influencer_proxy.connect_to_remote_agent("Influenxers", group.server_url) #Influenxers is the id to Amrit's inflencer agent  
     group.add_agent(influencer_proxy)
 
-
+    # Create and add proxy for EmailAgent
     email_proxy = ProxyAgent(name="EmailProxy", client_mode=True)
     await email_proxy.connect_to_remote_agent("EmailAgent", group.server_url)
     group.add_agent(email_proxy)
@@ -156,6 +155,18 @@ async def main():
                 3. Future market potential and timeline
                 Use your search capabilities to find supporting data.""",
                 "depends_on": ["initial_research"]
+            },
+             {
+                "task_id": "social_influencer_campaign_strategy",
+                "agent": "Influenxers", 
+                "description": 
+                    "Using the market analysis, assuming a business is interested in quantum ML, develop a social influencer campaign strategy:\n"
+                    "- Identify the best channels (TikTok, Instagram, YouTube)\n"
+                    "- Suggest 3 micro-influencer profiles\n"
+                    "- Outline KPIs and targeting\n"
+                    "- Provide a 4-week rollout plan"
+                ,
+                "depends_on": ["market_analysis"]
             },
             {
                 "task_id": "social_influencer_campaign_strategy",
