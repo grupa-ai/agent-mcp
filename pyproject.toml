@@ -5,18 +5,18 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agent-mcp"
 version = "0.1.4"
-description = "A bridge agent to enable agents  with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)"
+description = "A bridge agent to enable agents with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)"
 authors = [{name = "GrupaAI"}]
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 classifiers = [
-    "Development Status :: 4 - Alpha",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only"
 ]
 dependencies = [
     "autogen",
@@ -39,6 +39,26 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/grupa-ai/agent-mcp"
+Documentation = "https://github.com/grupa-ai/agent-mcp#readme"
+Repository = "https://github.com/grupa-ai/agent-mcp"
 
 [project.scripts]
-mcp-agent = "autonomous_agent_workflow:main"
+mcp-agent = "agent_mcp.cli:main"
+
+[tool.setuptools.packages.find]
+# Exclude non-package directories and build artifacts
+exclude = [
+    "tests*",
+    "docs*",
+    "examples*",
+    "venv*",
+    ".venv*",
+    "*venv*",
+    "build*",
+    "dist*",
+    "*.egg-info*",
+]
+
+# Include all Python files and data files in the package
+[tool.setuptools.package-data]
+"agent_mcp" = ["*.py", "*.json", "*.yaml", "*.yml"]

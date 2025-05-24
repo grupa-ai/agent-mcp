@@ -1,30 +1,58 @@
-include README.md
-include requirements.txt
-include pyproject.toml
+# Include all Python files
+include *.md
+include *.txt
+include *.toml
+include LICENSE
 include .env.example
 include env.template
+
+# Include package files
+recursive-include agent_mcp *.py
+recursive-include agent_mcp/tests *.py
+recursive-include agent_mcp/utils *.py
 recursive-include docs *
-recursive-include agent_mcp *
-recursive-include functions *.py
-recursive-include functions/firebase firebase-key-template.json
 
-global-exclude __pycache__
-global-exclude *.py[cod]
-global-exclude *$
-global-exclude *.so
-
-# Exclude virtual environment
-global-exclude venv/*
-global-exclude functions/venv/*
-
-# Exclude other unnecessary files
-prune .github
-prune .git
-prune .idea
-prune .vscode
+# Exclude virtual environments and build artifacts
+prune */venv
+prune */*/venv
+prune */*/*/venv
+prune .venv
+prune */.venv
+prune */*/.venv
 prune build
 prune dist
 prune *.egg-info
+prune .hypothesis
 
-# Exclude specific files
-exclude **/firebase-key.json
+# Exclude Python cache and compiled files
+global-exclude *.py[co]
+global-exclude *$py.class
+global-exclude __pycache__
+global-exclude .pytest_cache
+
+# Exclude system and IDE files
+global-exclude .DS_Store
+global-exclude .coverage
+global-exclude coverage.xml
+global-exclude *.cover
+global-exclude .git
+global-exclude .github
+global-exclude .idea
+global-exclude .vscode
+global-exclude *.swp
+global-exclude *.log
+global-exclude *.bak
+
+# Exclude environment and configuration
+global-exclude .env
+global-exclude .env.*
+
+# Exclude test and development files
+global-exclude *test*.py
+global-exclude *conftest.py
+global-exclude *.ipynb
+global-exclude .ipynb_checkpoints
+
+# Exclude sensitive files
+global-exclude **/firebase-key.json
+global-exclude **/firebase/*.json
