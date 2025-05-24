@@ -4,10 +4,27 @@ include pyproject.toml
 include .env.example
 include env.template
 recursive-include docs *
+recursive-include agent_mcp *
 recursive-include functions *.py
 recursive-include functions/firebase firebase-key-template.json
-exclude **/firebase-key.json
-prune functions/__pycache__
+
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *$
+global-exclude *.so
+
+# Exclude virtual environment
+global-exclude venv/*
+global-exclude functions/venv/*
+
+# Exclude other unnecessary files
 prune .github
 prune .git
-prune __pycache__
+prune .idea
+prune .vscode
+prune build
+prune dist
+prune *.egg-info
+
+# Exclude specific files
+exclude **/firebase-key.json
