@@ -101,16 +101,20 @@ class LangchainMCPAdapter(MCPAgent):
                 return
 
             # Add message_id to task context for processing
-            task_context = {
-                "type": "task", # Ensure type is explicitly set for process_tasks
-                "task_id": current_task_id,
-                "description": description,
-                "reply_to": reply_to,
-                "sender": sender,
-                "message_id": message_id
-            }
-            logger.debug(f"[{self.name}] Queueing task context: {task_context}")
-            await self.task_queue.put(task_context)
+            message['message_id'] = message_id
+
+            #task_context = {
+            #    "type": "task", # Ensure type is explicitly set for process_tasks
+            #    "task_id": current_task_id,
+            #    "description": description,
+            #    "reply_to": reply_to,
+            #    "sender": sender,
+            #    "message_id": message_id
+            #}
+            #logger.debug(f"[{self.name}] Queueing task context: {task_context}")
+            logger.debug(f"[DEBUG] {self.name}: Queueing task {task_id} with message_id {message_id} for processing")
+
+            await self.task_queue.put(message)
             logger.debug(f"[{self.name}] Successfully queued task {current_task_id}")
 
         elif msg_type == "task_result":
@@ -170,31 +174,32 @@ class LangchainMCPAdapter(MCPAgent):
 
             if not result_content:
                 logger.warning(f"[{self.name}] Received task_result from {sender} with empty content.")
-                 # Acknowledge the result message even if content is empty
-                if message_id and self.transport:
-                    asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
-                return
+            
+            # Acknowledge the result message even if content is empty
+            if message_id and self.transport:
+                asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
+            return
 
             # Create a *new* task for this agent based on the received result
-            new_task_id = f"conv_{uuid.uuid4()}" # Generate a new ID for this conversational turn
-            new_task_context = {
-                "type": "task", # Still a task for this agent to process
-                "task_id": new_task_id,
-                "description": str(result_content), # The result becomes the new input/description
-                "reply_to": message.get("reply_to") or result_content.get("reply_to"),
-                "sender": sender, # This agent is the conceptual sender of this internal task
-                "message_id": message_id # Carry over original message ID for acknowledgement
-            }
+            #new_task_id = f"conv_{uuid.uuid4()}" # Generate a new ID for this conversational turn
+            #new_task_context = {
+            #    "type": "task", # Still a task for this agent to process
+            #    "task_id": new_task_id,
+            #    "description": str(result_content), # The result becomes the new input/description
+            #    "reply_to": message.get("reply_to") or result_content.get("reply_to"),
+            #    "sender": sender, # This agent is the conceptual sender of this internal task
+            #    "message_id": message_id # Carry over original message ID for acknowledgement
+            #}
 
-            logger.info(f"[{self.name}] Queueing new conversational task {new_task_id} based on result from {sender}")
-            await self.task_queue.put(new_task_context)
-            logger.debug(f"[{self.name}] Successfully queued new task {new_task_id}")
+            #logger.info(f"[{self.name}] Queueing new conversational task {new_task_id} based on result from {sender}")
+            #await self.task_queue.put(new_task_context)
+            #logger.debug(f"[{self.name}] Successfully queued new task {new_task_id}")
 
         else:
             logger.warning(f"[{self.name}] Received unknown message type: {msg_type}. Message: {message}")
             # Acknowledge other message types immediately if they have an ID
-            if message_id and self.transport:
-                 asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
+            #if message_id and self.transport:
+            #     asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
 
     async def _handle_task(self, message: Dict[str, Any]):
         """Handle incoming task"""
@@ -247,7 +252,7 @@ class LangchainMCPAdapter(MCPAgent):
                 task_type = task.get("type") # Should always be 'task' if queued correctly
                 reply_to = task.get("reply_to")
                 message_id = task.get("message_id") # For acknowledgement
-                
+                sender = self._extract_sender(task)
                 # Fallback for nested content (less likely now but safe)
                 if not task_desc and isinstance(task.get("content"), dict):
                      content = task.get("content", {})
@@ -255,10 +260,12 @@ class LangchainMCPAdapter(MCPAgent):
                      if not task_id: task_id = content.get("task_id")
                      if not task_type: task_type = content.get("type")
                      if not reply_to: reply_to = content.get("reply_to")
+                     if not sender: sender = content.get("sender", "from")
 
                 print(f"[DEBUG] {self.name}: Processing task details:")
                 print(f"  - Task ID: {task_id}")
                 print(f"  - Type: {task_type}")
+                print(f"  - Sender: {sender}")
                 print(f"  - Reply To: {reply_to}")
                 print(f"  - Description: {str(task_desc)[:100]}...")
                 print(f"  - Original Message ID: {message_id}")
@@ -266,17 +273,17 @@ class LangchainMCPAdapter(MCPAgent):
                 if not task_desc or not task_id:
                     print(f"[ERROR] {self.name}: Task is missing description or task_id: {task}")
                     self.task_queue.task_done()
-                     # Acknowledge if possible
-                    if message_id and self.transport:
-                        asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
+                    # Acknowledge if possible
+                    #if message_id and self.transport:
+                    #    asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
                     continue
                     
                 # We only queue tasks now, so this check might be redundant but safe
                 if task_type != "task":
                     print(f"[ERROR] {self.name}: Invalid item type received in task queue: {task_type}. Item: {task}")
                     self.task_queue.task_done()
-                    if message_id and self.transport:
-                        asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
+                    #if message_id and self.transport:
+                    #    asyncio.create_task(self.transport.acknowledge_message(self.name, message_id))
                     continue
                 
                 print(f"[DEBUG] {self.name}: Starting execution of task {task_id}")
@@ -287,7 +294,7 @@ class LangchainMCPAdapter(MCPAgent):
                     # Pass input AND agent_name in a dictionary matching the prompt's input variables
                     input_data = {
                         "input": task_desc,
-                        #"agent_name": self.name # Add agent_name here
+                        "agent_name": self.name # Add agent_name here to indicate this agent as the executor (who's currently executing the task)
                     }
                     result_dict = await self.agent_executor.ainvoke(input_data)
                     print(f"[DEBUG] {self.name}: Agent execution completed. Full result: {result_dict}")
@@ -331,8 +338,8 @@ class LangchainMCPAdapter(MCPAgent):
                             
                         print(f"[DEBUG] Conversation Routing - Original sender: {reply_to}, Current agent: {self.name}, Final reply_to: {reply_to}")
                         print(f"[DEBUG] Derived target agent: {target_agent_name} from reply_to: {reply_to}")
-                        
-                        print(f"[DEBUG] Message Chain - From: {task.get('sender')} -> To: {self.name} -> ReplyTo: {reply_to}")
+                        print(f"[DEBUG] TASK_MESSAGE: {task}")
+                        print(f"[DEBUG] Message Chain - From: {sender} -> To: {self.name} -> ReplyTo: {reply_to}")
                         
                         print(f"[DEBUG] {self.name}: Sending result to target agent: {target_agent_name} (extracted from {reply_to})")
                         # --- END FIX ---

@@ -15,15 +15,108 @@ from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIW
 from langchain_community.tools import Tool
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain.schema.messages import SystemMessage
+from aztp_client import Aztp
+from langchain_community.tools import DuckDuckGoSearchRun
+
+class RateLimitedDuckDuckGoSearch:
+    def __init__(self, min_delay=5.0, max_retries=5):
+        """Initialize with rate limiting and retry logic
+        
+        Args:
+            min_delay: Minimum delay between requests in seconds (default: 5.0)
+            max_retries: Maximum number of retry attempts (default: 5)
+        """
+        self.searcher = DuckDuckGoSearchRun()
+        self.min_delay = max(min_delay, 5.0)  # Enforce minimum delay of 5.0 seconds
+        self.max_retries = max_retries
+        self.last_request_time = 0
+        self.session = None
+        self.base_delay = 3.0  # Increased base delay for exponential backoff
+
+    async def search_with_retry(self, query: str) -> str:
+        """Perform search with rate limiting, retries, and exponential backoff
+        
+        Args:
+            query: Search query string
+            
+        Returns:
+            str: Search results
+            
+        Raises:
+            Exception: If max retries are exceeded or other errors occur
+        """
+        import time
+        import random
+        import asyncio
+        from duckduckgo_search.exceptions import DuckDuckGoSearchException
+        
+        last_error = None
+        
+        for attempt in range(self.max_retries):
+            try:
+                # Enforce rate limiting with jitter
+                now = time.time()
+                time_since_last = now - self.last_request_time
+                if time_since_last < self.min_delay:
+                    jitter = random.uniform(0.8, 1.2)  # Increased jitter range
+                    wait_time = max(0, self.min_delay - time_since_last + jitter)
+                    print(f"Rate limit: Waiting {wait_time:.2f}s before search")
+                    await asyncio.sleep(wait_time)
+                
+                # Update last request time before making the request
+                self.last_request_time = time.time()
+                
+                # Perform the search
+                result = self.searcher.run(query)
+                
+                # If we got here, the search was successful
+                return result
+                
+            except Exception as e:
+                last_error = e
+                # Check for various rate limit indicators
+                rate_limit_indicators = ["ratelimit", "429", "too many", "rate limit", "timeout"]
+                if any(indicator in str(e).lower() for indicator in rate_limit_indicators):
+                    backoff = min(self.base_delay * (2 ** attempt), 60)  # Increased cap to 60 seconds
+                    jitter = random.uniform(0.8, 1.2)
+                    wait_time = backoff * jitter
+                    
+                    if attempt < self.max_retries - 1:
+                        print(f"Rate limited. Retrying in {wait_time:.2f}s (attempt {attempt + 1}/{self.max_retries})")
+                        await asyncio.sleep(wait_time)
+                        continue
+                
+                # If we've reached max retries or it's not a rate limit error, raise
+                if attempt == self.max_retries - 1:
+                    error_msg = f"Search failed after {self.max_retries} attempts. Last error: {str(e)}"
+                    print(error_msg)
+                    raise Exception(error_msg)
+                    
+                # For other errors, use exponential backoff with jitter
+                backoff = min(self.base_delay * (2 ** attempt), 60)
+                jitter = random.uniform(0.8, 1.2)
+                wait_time = backoff * jitter
+                print(f"Error occurred. Retrying in {wait_time:.2f}s (attempt {attempt + 1}/{self.max_retries})")
+                await asyncio.sleep(wait_time)
+
+    def run(self, query: str) -> str:
+        """Synchronous run method for compatibility with LangChain tools"""
+        import asyncio
+        return asyncio.run(self.search_with_retry(query))
 
 async def setup_langchain_agent():
-    """Setup a Langchain agent with search capabilities"""
-    # Create Langchain tools
-    search = DuckDuckGoSearchAPIWrapper()
+    """Setup a Langchain agent with rate-limited search capabilities"""
+    # Create rate-limited search instance
+    search = RateLimitedDuckDuckGoSearch(
+        min_delay=3.0,  # At least 3 seconds between requests
+        max_retries=3
+    )
+    
     search_tool = Tool(
         name="duckduckgo_search",
-        description="Search the web using DuckDuckGo",
-        func=search.run
+        description="Search the web using DuckDuckGo. Use this tool when you need to find up-to-date information. Input should be a search query.",
+        func=search.run,
+        coroutine=search.search_with_retry  # Enable async support
     )
     tools = [search_tool]
     
@@ -106,10 +199,24 @@ async def main():
     # Create and add proxy for Influencer
     influencer_proxy = ProxyAgent(name="Influenxers", client_mode=True)
     await influencer_proxy.connect_to_remote_agent("Influenxers", group.server_url) #Influenxers is the id to Amrit's inflencer agent  
+    
+    # Create a secure agent
+    # TODO: come back to do secure connections
+    #client = Aztp(api_key=os.getenv("AZTP_API_KEY"))
+    #influencer_proxy = await client.secure_connect(influencer_proxy, name="Influencer", config={"isGlobalIdentity": True})
+
+    # Verify identity
+    #is_valid = await client.verify_identity(influencer_proxy)
+    #print(f"Influencer identity is valid: {is_valid}")
+    
+    # Get identity details
+    #identity = await client.get_identity(influencer_proxy)
+    #print(f"Influencer identity: {identity}")
+    
     group.add_agent(influencer_proxy)
 
     # Create and add proxy for EmailAgent
-    email_proxy = ProxyAgent(name="EmailProxy", client_mode=True)
+    email_proxy = ProxyAgent(name="EmailProxy", client_mode=True) 
     await email_proxy.connect_to_remote_agent("EmailAgent", group.server_url)
     group.add_agent(email_proxy)
     
@@ -135,14 +242,14 @@ async def main():
     
     # Define a collaborative task
     task = {
-        "task_id": "quantum_ml_research",
+        "task_id": "balm_pcos_cure_research",
         "steps": [
             {
                 "task_id": "initial_research",
                 "agent": "Researcher",
-                "description": """Research the intersection of quantum computing and machine learning.
+                "description": """Research the intersection of AI Agents and PCOS cure.
                 Focus on: 
-                1. Recent breakthroughs in quantum ML algorithms
+                1. Recent breakthroughs in using AI Agents and PCOS cure
                 2. Potential applications in real-world scenarios
                 3. Current limitations and challenges"""
             },
@@ -150,7 +257,7 @@ async def main():
                 "task_id": "market_analysis",
                 "agent": "Analyst",
                 "description": """Using the research findings, analyze:
-                1. Current market adoption of quantum ML
+                1. Current market potential, size and potential adoption of cure for PCOS using AI Agents
                 2. Major companies and research institutions involved
                 3. Future market potential and timeline
                 Use your search capabilities to find supporting data.""",
@@ -169,27 +276,31 @@ async def main():
                 "depends_on": ["market_analysis"]
             },
             {
-                "task_id": "social_influencer_campaign_strategy",
-                "agent": "Influenxers", 
-                "description": 
-                    "Using the market analysis, assuming a business is interested in quantum ML, develop a social influencer campaign strategy:\n"
-                    "- Identify the best channels (TikTok, Instagram, YouTube)\n"
-                    "- Suggest 3 micro-influencer profiles\n"
-                    "- Outline KPIs and targeting\n"
-                    "- Provide a 4-week rollout plan"
-                ,
-                "depends_on": ["market_analysis"]
-            },
-            {
                 "task_id": "send_report",
                 "agent": "EmailAgent",
-                "description": "Send the research findings via email",
+                "description": """
+                Come up with a comprehensive report from the research and also the social influencer campaign strategy and key findings.
+                Send an email to nonye@balm.ai with the subject "AI Agents and PCOS cure Research Report"
+                with the report as the body of the email.
+                
+                The email should be professional and include:
+                  1. A comprehensive and detailed outline, including all the points from the research from the previous steps
+                  2. A brief introduction to the campaign
+                  3. Key findings from the market analysis
+                  4. The proposed influencer strategy
+                  5. Expected outcomes and KPIs
+                
+                the signature should be:
+                
+                Best regards,
+                Samuel Ekpe
+                """,
                 "content": {
                     "email_params": {
                         "to_address": "samuel@grupa.io",
-                        "subject": "Quantum ML Research Report",
-                        "body": "Here are our findings on quantum ML..."
-                    }
+                        "subject": "AI Agents and PCOS cure Research Report"
+                    }, 
+                    "generate_content": True
                 },
                 "depends_on": ["social_influencer_campaign_strategy"]
             }
@@ -203,18 +314,13 @@ async def main():
     # Verify task structure before submission
     print(f"Task structure: {json.dumps(task, indent=2)}")
     print(f"Active agents: {[agent.name for agent in group.agents]}")
-    
-    try:
-        await group.submit_task(task)
-        print("Task submitted successfully")
-    except Exception as e:
-        print(f"Error submitting task: {e}")
-        raise
-    
-    print("\n=== Waiting for Results ===")
+
+    # Submit all steps at once and let the group chat handle dependency injection at the right time
+    await group.submit_task(task)
     await group.wait_for_completion()
     
     print("\n=== Task Complete ===\n")
+
     print("Shutting down agents...")
     await group.shutdown()
     print("All agents shut down successfully")

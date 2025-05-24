@@ -636,7 +636,7 @@ class MCPAgent(ConversableAgent):
         TODO: Migrate to MessageSchema validation (GitHub Issue #1?)
         """
         # First check root level
-        if sender := message.get('sender'):
+        if sender := message.get('sender') or message.get('from'):
             return sender
         
         content = message.get('content', {})
@@ -646,13 +646,13 @@ class MCPAgent(ConversableAgent):
             try:
                 if text_content := content.get('text'):
                     parsed = json.loads(text_content)
-                    if sender := parsed.get('sender'):
+                    if sender := parsed.get('sender') or parsed.get('from'):
                         return sender
             except json.JSONDecodeError:
                 pass
             
             # Fallback to content.sender
-            if sender := content.get('sender'):
+            if sender := content.get('sender') or content.get('from'):
                 return sender
         
         return "Unknown"
