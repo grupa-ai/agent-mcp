@@ -1,0 +1,13 @@
+include README.md
+include requirements.txt
+include pyproject.toml
+include .env.example
+include env.template
+recursive-include docs *
+recursive-include functions *.py
+recursive-include functions/firebase firebase-key-template.json
+exclude **/firebase-key.json
+prune functions/__pycache__
+prune .github
+prune .git
+prune __pycache__

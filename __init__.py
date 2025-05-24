@@ -5,4 +5,4 @@ using the Model Context Protocol (MCP). It includes tools for agent communicatio
 context sharing, and task orchestration.
 """
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
