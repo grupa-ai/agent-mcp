@@ -18,3 +18,4 @@ duckduckgo-search==4.1.1
 openai==1.12.0
 crewai==0.11.0
 langgraph==0.0.15
+aztp-client>=1.0.23

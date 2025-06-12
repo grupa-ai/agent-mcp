@@ -15,7 +15,7 @@ from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIW
 from langchain_community.tools import Tool
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain.schema.messages import SystemMessage
-from aztp_client import Aztp
+from agent_mcp.aztp_config import get_aztp_client
 from langchain_community.tools import DuckDuckGoSearchRun
 
 class RateLimitedDuckDuckGoSearch:
@@ -202,16 +202,36 @@ async def main():
     
     # Create a secure agent
     # TODO: come back to do secure connections
-    #client = Aztp(api_key=os.getenv("AZTP_API_KEY"))
-    #influencer_proxy = await client.secure_connect(influencer_proxy, name="Influencer", config={"isGlobalIdentity": True})
+    aztp_client = get_aztp_client()
+    if aztp_client:
+        try:
+            print(f"Securing agent: {influencer_proxy.name} with AZTP...")
+            # Ensure the agent name for AZTP is unique if needed, e.g., by appending a suffix or using a predefined AZTP name
+            aztp_agent_name = f"{influencer_proxy.name}_GlobalAZTP"
+            secured_influencer_proxy_ref = await aztp_client.secure_connect(
+                influencer_proxy,
+                name=aztp_agent_name, # Using 'name' parameter as seen in policy_demo and this file's comments
+                config={"isGlobalIdentity": True}
+            )
+            print(f"Agent {aztp_agent_name} secured. AZTP ID: {secured_influencer_proxy_ref.identity.aztp_id}")
 
-    # Verify identity
-    #is_valid = await client.verify_identity(influencer_proxy)
-    #print(f"Influencer identity is valid: {is_valid}")
-    
-    # Get identity details
-    #identity = await client.get_identity(influencer_proxy)
-    #print(f"Influencer identity: {identity}")
+            # Verify identity
+            is_valid = await aztp_client.verify_identity(secured_influencer_proxy_ref) # Pass the reference from secure_connect
+            print(f"Influencer AZTP identity is valid: {is_valid}")
+
+            # Get identity details
+            identity_details = await aztp_client.get_identity(secured_influencer_proxy_ref) # Pass the reference
+            print(f"Influencer AZTP identity details: {identity_details}")
+
+            # It's important to decide what to do with secured_influencer_proxy_ref.
+            # If it's a wrapper, the original influencer_proxy might need to be replaced by it.
+            # For now, we are just calling it and logging. The original influencer_proxy is still added to the group.
+            # This might need adjustment based on how aztp_client.secure_connect modifies or wraps the agent.
+
+        except Exception as e:
+            print(f"Error during AZTP operations for {influencer_proxy.name}: {e}")
+    else:
+        print("AZTP client not available. Skipping AZTP operations for Influencer agent.")
     
     group.add_agent(influencer_proxy)
 

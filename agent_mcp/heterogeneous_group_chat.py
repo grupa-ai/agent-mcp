@@ -17,6 +17,7 @@ import logging
 from typing import Dict, Any, Optional, List
 import os
 import time
+from .aztp_config import get_aztp_client
 
 logger = logging.getLogger(__name__)
 
@@ -257,6 +258,31 @@ class HeterogeneousGroupChat:
         # --- Create Coordinator Agent --- 
         print(f"Creating coordinator with config: {final_config}") # Debug: Log final config
         self.coordinator = CoordinatorAgent(self, **final_config)
+
+        # --- Secure Coordinator with AZTP ---
+        aztp_client = get_aztp_client()
+        if aztp_client:
+            aztp_coordinator_name = f"MACNET_Coordinator_{self.coordinator.name}"
+            try:
+                print(f"Attempting to secure coordinator: {self.coordinator.name} with AZTP name: {aztp_coordinator_name}")
+                secured_coord_ref = await aztp_client.secure_connect(
+                    self.coordinator,
+                    name=aztp_coordinator_name,
+                    config={"isGlobalIdentity": True}
+                )
+                if secured_coord_ref and hasattr(secured_coord_ref, 'identity') and hasattr(secured_coord_ref.identity, 'aztp_id'):
+                    # Store aztp_id, perhaps on the agent object itself or in a separate mapping
+                    self.coordinator.aztp_id = secured_coord_ref.identity.aztp_id
+                    print(f"Coordinator {self.coordinator.name} secured. AZTP ID: {self.coordinator.aztp_id}")
+                    # Optionally verify
+                    # is_valid = await aztp_client.verify_identity(secured_coord_ref)
+                    # print(f"Coordinator AZTP identity valid: {is_valid}")
+                else:
+                    print(f"Failed to secure coordinator {self.coordinator.name} or obtain AZTP ID.")
+            except Exception as e:
+                print(f"Error securing coordinator {self.coordinator.name} with AZTP: {e}")
+        else:
+            print("AZTP client not available. Coordinator will not be secured with AZTP.")
         
         # --- Set Message Handler ---
         #self.coordinator.transport.set_message_handler(self._handle_coordinator_message)
@@ -304,6 +330,31 @@ class HeterogeneousGroupChat:
                 
             self.agents.append(agent)
             added_agents.append(agent)
+
+            # --- Secure Agent with AZTP ---
+            aztp_client = get_aztp_client()
+            if aztp_client:
+                aztp_agent_name = f"MACNET_Agent_{agent.name}"
+                try:
+                    print(f"Attempting to secure agent: {agent.name} with AZTP name: {aztp_agent_name}")
+                    secured_agent_ref = await aztp_client.secure_connect(
+                        agent,
+                        name=aztp_agent_name,
+                        config={"isGlobalIdentity": True} # Assuming global identity for now
+                    )
+                    if secured_agent_ref and hasattr(secured_agent_ref, 'identity') and hasattr(secured_agent_ref.identity, 'aztp_id'):
+                        # Store aztp_id
+                        agent.aztp_id = secured_agent_ref.identity.aztp_id
+                        print(f"Agent {agent.name} secured. AZTP ID: {agent.aztp_id}")
+                        # Optionally verify
+                        # is_valid = await aztp_client.verify_identity(secured_agent_ref)
+                        # print(f"Agent {agent.name} AZTP identity valid: {is_valid}")
+                    else:
+                        print(f"Failed to secure agent {agent.name} or obtain AZTP ID.")
+                except Exception as e:
+                    print(f"Error securing agent {agent.name} with AZTP: {e}")
+            else:
+                print(f"AZTP client not available. Agent {agent.name} will not be secured with AZTP.")
             
         return added_agents
         
