@@ -14,3 +14,4 @@ from .heterogeneous_group_chat import HeterogeneousGroupChat
 from .langchain_mcp_adapter import LangchainMCPAdapter
 from .crewai_mcp_adapter import CrewAIMCPAdapter
 from .langgraph_mcp_adapter import LangGraphMCPAdapter
+from .a2a_mcp_adapter import A2AMCPAdapter # Added line
