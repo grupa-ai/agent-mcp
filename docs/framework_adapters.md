@@ -103,6 +103,77 @@ class LangGraphMCPAdapter(MCPAgent):
 - Tool execution
 - Process orchestration
 
+### 4. Argo Agent Adapter (ArgoAgentMcpAdapter)
+
+#### Purpose
+Adapts Argo Agents to work within the MCP ecosystem. (Note: Argo Agent specifics are based on common agent patterns due to limited direct documentation access during development).
+
+#### Implementation
+```python
+class ArgoAgentMcpAdapter(MCPAgent):
+    def __init__(
+        self,
+        name: str,
+        argo_agent: PlaceholderArgoAgent, # Replace with actual ArgoAgent type
+        transport: Optional[MCPTransport] = None,
+        client_mode: bool = False,
+        system_message: str = "I am an Argo agent integrated with MCP.",
+        **kwargs
+    ):
+        """
+        Initialize Argo Agent adapter.
+
+        Args:
+            name: Agent name
+            argo_agent: Argo Agent instance (placeholder used in example)
+            transport: Communication transport
+            client_mode: Whether to operate as client
+            system_message: Default system message for the agent
+            **kwargs: Additional arguments for MCPAgent
+        """
+```
+
+#### Key Features (Assumed)
+- Task execution based on Argo Agent capabilities.
+- Integration with MCP for message exchange.
+
+### 5. LlamaIndex Adapter (LlamaIndexMcpAdapter)
+
+#### Purpose
+Enables LlamaIndex agents (e.g., for RAG, data-augmented generation) to participate in the MCP ecosystem.
+
+#### Implementation
+```python
+class LlamaIndexMcpAdapter(MCPAgent):
+    def __init__(
+        self,
+        name: str,
+        llama_index_agent: PlaceholderLlamaIndexAgent, # Replace with actual LlamaIndexAgent type
+        transport: Optional[MCPTransport] = None,
+        client_mode: bool = False,
+        execution_method_name: str = "chat", # e.g., "chat", "query"
+        system_message: str = "I am a LlamaIndex agent integrated with MCP.",
+        **kwargs
+    ):
+        """
+        Initialize LlamaIndex adapter.
+
+        Args:
+            name: Agent name
+            llama_index_agent: LlamaIndex agent instance (placeholder used in example)
+            transport: Communication transport
+            client_mode: Whether to operate as client
+            execution_method_name: The method to call on the LlamaIndex agent (e.g., "chat", "query")
+            system_message: Default system message for the agent
+            **kwargs: Additional arguments for MCPAgent
+        """
+```
+
+#### Key Features
+- Leverages LlamaIndex's data querying and synthesis capabilities.
+- Configurable execution method for flexibility.
+- Integration with MCP for receiving tasks and sending results.
+
 ## Common Adapter Features
 
 ### 1. Message Translation
@@ -196,6 +267,47 @@ adapter = LangGraphMCPAdapter(
     name="GraphProcessor",
     transport=transport,
     tools=tools
+)
+```
+
+### 4. Argo Agent Integration
+```python
+from agent_mcp import ArgoAgentMcpAdapter, PlaceholderArgoAgent, HTTPTransport
+
+# Assume transport is configured (e.g., HTTPTransport)
+# from agent_mcp.mcp_transport import HTTPTransport
+# transport = HTTPTransport(host="http://localhost", port=8004)
+
+
+# Create placeholder Argo Agent
+argo_agent_instance = PlaceholderArgoAgent(name="MyArgoBot")
+
+# Create adapter
+argo_adapter = ArgoAgentMcpAdapter(
+    name="ArgoMCP",
+    argo_agent=argo_agent_instance,
+    # transport=transport, # Assign if this adapter runs its own server or for client polling
+    client_mode=True # Example: if connecting to a central MCP coordinator
+)
+```
+
+### 5. LlamaIndex Integration
+```python
+from agent_mcp import LlamaIndexMcpAdapter, PlaceholderLlamaIndexAgent, HTTPTransport
+
+# Assume transport is configured
+# transport = HTTPTransport(host="http://localhost", port=8005)
+
+# Create placeholder LlamaIndex Agent
+llama_agent_instance = PlaceholderLlamaIndexAgent(name="MyLlamaBot")
+
+# Create adapter
+llama_adapter = LlamaIndexMcpAdapter(
+    name="LlamaMCP",
+    llama_index_agent=llama_agent_instance,
+    # transport=transport,
+    client_mode=True,
+    execution_method_name="chat" # or "query"
 )
 ```
 
