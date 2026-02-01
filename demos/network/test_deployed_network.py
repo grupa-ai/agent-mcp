@@ -297,7 +297,7 @@ async def main():
                 """,
                 "content": {
                     "email_params": {
-                        "to_address": "samuel@grupa.io",
+                        "to_address": "samuel@grupa.ai",
                         "subject": "AI Agents and PCOS cure Research Report"
                     }, 
                     "generate_content": True
