@@ -58,7 +58,13 @@ try:
 except ImportError:
     GoogleAIMCPAdapter = None
 
+# Agent Lightning (as enhancement library, not adapter)
 try:
-    from .agent_lightning_mcp_adapter import AgentLightningMCPAdapter
+    from .agent_lightning_library import AgentLightningLibrary
+    AGENT_LIGHTNING_AVAILABLE = True
+    print("✅ Agent Lightning library: Available")
 except ImportError:
+    AGENT_LIGHTNING_AVAILABLE = False
+    from .agent_lightning_mcp_adapter import AgentLightningMCPAdapter
     AgentLightningMCPAdapter = None
+    print("⚠️  Agent Lightning library not available. Install with: pip install agentlightning")
