@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mcp"
-version = "2.0.0"
+version = "0.1.6"
 description = "The Universal System for AI Agent Collaboration - Connect any AI agent to every other agent"
 authors = [{name = "AgentMCP Team", email = "team@agentmcp.ai"}]
 readme = "README.md"

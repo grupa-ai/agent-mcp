@@ -47,7 +47,7 @@ packages = find_packages(exclude=[
 
 setup(
     name="agent-mcp",
-    version="0.1.5",
+    version="0.1.6",
     author="GrupaAI",
     description="A bridge agent to enable agents with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)",
     long_description=long_description,
