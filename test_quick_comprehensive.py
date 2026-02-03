@@ -211,7 +211,7 @@ async def quick_test():
         # Save results
         final_results = {
             "timestamp": asyncio.get_event_loop().time(),
-            "platform_version": "AgentMCP v2.0",
+            "platform_version": "AgentMCP v0.1.6",
             "status": "ENTERPRISE READY" if framework_count >= 5 else "PARTIAL READY",
             "test_results": test_results,
             "frameworks_count": framework_count,

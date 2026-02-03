@@ -534,7 +534,7 @@ class ComprehensiveTestSuite:
         # Compile results
         self.test_results = {
             "timestamp": datetime.now().isoformat(),
-            "platform_version": "AgentMCP v2.0",
+            "platform_version": "AgentMCP v0.1.6",
             "tests": {
                 "security": security_results,
                 "payments": payment_results,

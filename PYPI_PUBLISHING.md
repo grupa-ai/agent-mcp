@@ -6,7 +6,7 @@ This guide explains how to publish updates to the `agent-mcp` package on PyPI.
 
 - **Package Name**: `agent-mcp`
 - **PyPI URL**: https://pypi.org/project/agent-mcp/
-- **Current Version**: 0.1.5 (updated)
+- **Current Version**: 0.1.6 (updated)
 
 ## Prerequisites
 
@@ -62,8 +62,8 @@ Both scripts will:
    ls -lh dist/
    ```
    You should see:
-   - `agent_mcp-0.1.5-py3-none-any.whl`
-   - `agent_mcp-0.1.5.tar.gz`
+   - `agent_mcp-0.1.6-py3-none-any.whl`
+   - `agent_mcp-0.1.6.tar.gz`
 
 5. **Upload to PyPI**:
    ```bash
@@ -79,7 +79,7 @@ Both scripts will:
 ## Version Numbering
 
 Follow [Semantic Versioning](https://semver.org/):
-- **MAJOR.MINOR.PATCH** (e.g., 0.1.5)
+- **MAJOR.MINOR.PATCH** (e.g., 0.1.6)
 - **MAJOR**: Breaking changes
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes (backward compatible)
@@ -107,9 +107,9 @@ Follow [Semantic Versioning](https://semver.org/):
 
 Test the build locally:
 ```bash
-pip install dist/agent_mcp-0.1.5-py3-none-any.whl
+pip install dist/agent_mcp-0.1.6-py3-none-any.whl
 # or
-pip install dist/agent_mcp-0.1.5.tar.gz
+pip install dist/agent_mcp-0.1.6.tar.gz
 ```
 
 ## Files That Need Version Updates
@@ -157,9 +157,9 @@ This means the version already exists on PyPI. You need to:
 ## Post-Publishing Checklist
 
 - [ ] Verify package appears on PyPI
-- [ ] Test installation: `pip install agent-mcp==0.1.5`
+- [ ] Test installation: `pip install agent-mcp==0.1.6`
 - [ ] Update release notes/changelog (if applicable)
-- [ ] Tag the release in git: `git tag v0.1.5`
+- [ ] Tag the release in git: `git tag v0.1.6`
 - [ ] Push tags: `git push --tags`
 
 ## Additional Resources
