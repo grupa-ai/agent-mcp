@@ -46,3 +46,19 @@ try:
     from .langgraph_mcp_adapter import LangGraphMCPAdapter
 except ImportError:
     LangGraphMCPAdapter = None
+
+# Additional AI SDK adapters
+try:
+    from .claude_mcp_adapter import ClaudeMCPAdapter
+except ImportError:
+    ClaudeMCPAdapter = None
+
+try:
+    from .google_ai_mcp_adapter import GoogleAIMCPAdapter
+except ImportError:
+    GoogleAIMCPAdapter = None
+
+try:
+    from .agent_lightning_mcp_adapter import AgentLightningMCPAdapter
+except ImportError:
+    AgentLightningMCPAdapter = None

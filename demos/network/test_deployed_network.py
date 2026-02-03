@@ -1,5 +1,6 @@
 """
 Test script for heterogeneous agents working together through the deployed server.
+Supports both OpenAI and Google Gemini API keys.
 """
 
 import os
@@ -15,8 +16,46 @@ from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIW
 from langchain_community.tools import Tool
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain.schema.messages import SystemMessage
-from aztp_client import Aztp
+# from aztp_client import Aztp  # Commented out - optional dependency
 from langchain_community.tools import DuckDuckGoSearchRun
+
+# Google Gemini imports
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    GEMINI_AVAILABLE = True
+    print("✅ Google Gemini support enabled")
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("⚠️  Google Gemini not available. Install with: pip install langchain-google-genai")
+
+def get_llm_config():
+    """Get LLM configuration based on available API keys"""
+    openai_key = os.getenv("OPENAI_API_KEY")
+    gemini_key = os.getenv("GOOGLE_GEMINI_API_KEY")
+    
+    if not openai_key and not gemini_key:
+        raise ValueError("Please set either OPENAI_API_KEY or GOOGLE_GEMINI_API_KEY environment variable")
+    
+    config = {}
+    
+    if openai_key:
+        config["provider"] = "openai"
+        config["model"] = "gpt-3.5-turbo"
+        config["api_key"] = openai_key
+        config["llm"] = ChatOpenAI(temperature=0)
+        print("✅ Using OpenAI API")
+    
+    elif gemini_key:
+        config["provider"] = "gemini"
+        config["model"] = "gemini-1.5-flash"
+        config["api_key"] = gemini_key
+        if GEMINI_AVAILABLE:
+            config["llm"] = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0)
+            print("✅ Using Google Gemini API")
+        else:
+            raise ValueError("Google Gemini API key found but langchain-google-genai not installed")
+    
+    return config
 
 class RateLimitedDuckDuckGoSearch:
     def __init__(self, min_delay=5.0, max_retries=5):
@@ -106,6 +145,9 @@ class RateLimitedDuckDuckGoSearch:
 
 async def setup_langchain_agent():
     """Setup a Langchain agent with rate-limited search capabilities"""
+    # Get LLM configuration
+    llm_config = get_llm_config()
+    
     # Create rate-limited search instance
     search = RateLimitedDuckDuckGoSearch(
         min_delay=3.0,  # At least 3 seconds between requests
@@ -120,8 +162,8 @@ async def setup_langchain_agent():
     )
     tools = [search_tool]
     
-    # Create Langchain model and agent
-    llm = ChatOpenAI(temperature=0)
+    # Create Langchain model and agent with configured LLM
+    llm = llm_config["llm"]
     agent = OpenAIFunctionsAgent.from_llm_and_tools(
         llm=llm,
         tools=tools,
@@ -141,11 +183,9 @@ async def setup_langchain_agent():
     return agent, agent_executor
 
 async def main():
-    #the idea here is agent in a group working with each other regardless of the framework they were built on
-    # Check for API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("Please set the OPENAI_API_KEY environment variable")
+    #the idea here is agent in a group working with each other regardless of framework they were built on
+    # Get LLM configuration (supports OpenAI or Gemini)
+    llm_config = get_llm_config()
     
     # Create a group chat
     group = HeterogeneousGroupChat(
@@ -155,7 +195,7 @@ async def main():
     
     print("\n=== Creating Coordinator ===")
     # Create and initialize coordinator
-    coordinator = group.create_coordinator(api_key=api_key)
+    coordinator = group.create_coordinator(api_key=llm_config["api_key"])
     print(f"Coordinator created with name: {coordinator.name}")
     
     # Verify coordinator transport
@@ -171,8 +211,8 @@ async def main():
         Your role is to analyze topics and provide detailed, technical insights.""",
         llm_config={
             "config_list": [{
-                "model": "gpt-3.5-turbo",
-                "api_key": api_key
+                "model": llm_config["model"],
+                "api_key": llm_config["api_key"]
             }]
         }
     )
