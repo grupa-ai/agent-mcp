@@ -184,7 +184,7 @@ AgentMCP handles the complexities behind the scenes:
 -   **Framework Freedom**: Use the AI frameworks you know and love.
 -   **Zero Config Networking**: Focus on agent logic, not infrastructure.
 -   **Simple API**: Primarily interacts through the `@mcp_agent` decorator and task definitions.
--   **Adapters for Popular Frameworks**: Built-in support for Langchain, CrewAI, Autogen, LangGraph simplifies integration.
+-   **Adapters for Popular Frameworks**: Built-in support for Langchain, CrewAI, Autogen, LangGraph, LlamaIndex, Pydantic AI, Microsoft Agent Framework, CAMEL, and more.
 -   **Asynchronous & Scalable Architecture**: Built on FastAPI for high performance.
 -   **Multi-Provider Support**: Seamlessly switch between OpenAI, Gemini, Claude, and Agent Lightning.
 -   **Cost Optimization**: Automatic 80-90% cost reduction through intelligent routing.
@@ -207,12 +207,17 @@ AgentMCP is designed for broad compatibility:
 -   ✨ **OpenAI GPT** - Full OpenAI SDK integration
 -   ✨ **Google Gemini** - Complete Google AI integration
 -   ✨ **Anthropic Claude** - Full Claude API integration
+-   ✨ **LlamaIndex** - Production-ready RAG and document processing
+-   ✨ **Pydantic AI** - Type-safe, FastAPI-like agent framework
+-   ✨ **Microsoft Agent Framework** - Semantic Kernel + AutoGen unified platform
+-   ✨ **A2A Protocol** - Google's Agent-to-Agent communication standard
+-   ✨ **CAMEL** - Communicative Agents for Mind Exploration and Learning
 -   ✨ **Multi-Provider Orchestration** - Mix and match any AI providers
 
 **Coming Soon:**
 
--   🔜 LlamaIndex
--   🔜 A2A Protocol Integration
+-   🔜 Additional framework integrations
+-   🔜 Enhanced protocol support
 
 *AgentMCP acts as a universal connector, enabling agents from different ecosystems to work together seamlessly.*
 
