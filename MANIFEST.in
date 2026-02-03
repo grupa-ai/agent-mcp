@@ -8,9 +8,17 @@ include env.template
 
 # Include package files
 recursive-include agent_mcp *.py
-recursive-include agent_mcp/tests *.py
-recursive-include agent_mcp/utils *.py
+recursive-include agent_mcp *.json
+recursive-include agent_mcp *.yaml
+recursive-include agent_mcp *.yml
+recursive-include agent_mcp/config *
+recursive-include agent_mcp/templates *
+recursive-include agent_mcp/static *
 recursive-include docs *
+
+# Include demos and examples (as documentation)
+recursive-include demos *.py
+recursive-include examples *.py
 
 # Exclude virtual environments and build artifacts
 prune */venv
@@ -47,7 +55,9 @@ global-exclude *.bak
 global-exclude .env
 global-exclude .env.*
 
-# Exclude test and development files
+# Exclude test and development files (but keep demo files)
+prune tests
+prune agent_mcp/tests
 global-exclude *test*.py
 global-exclude *conftest.py
 global-exclude *.ipynb

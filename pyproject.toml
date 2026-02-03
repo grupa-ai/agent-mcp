@@ -4,46 +4,112 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mcp"
-version = "0.1.4"
-description = "A bridge agent to enable agents with Model Context Protocol capabilities to be added to a Multi-agent Collaboration Network (MCN) to run on a Multi-agent Collaboration Platform (MCP)"
-authors = [{name = "GrupaAI"}]
+version = "2.0.0"
+description = "The Universal System for AI Agent Collaboration - Connect any AI agent to every other agent"
+authors = [{name = "AgentMCP Team", email = "team@agentmcp.ai"}]
 readme = "README.md"
-requires-python = ">=3.11"
-license = "MIT"
+requires-python = ">=3.8"
+license = {text = "MIT"}
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3 :: Only"
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
 ]
 dependencies = [
-    "autogen",
-    "langchain",
-    "langchain-openai",
-    "langchain-community",
+    # Core dependencies
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sse-starlette>=1.8.2",
+    "python-multipart>=0.0.6",
+    "python-dotenv>=1.0.0",
+    "aiohttp>=3.9.1",
+    
+    # Database & Storage
+    "firebase-admin>=6.4.0",
+    "google-cloud-firestore>=2.13.1",
+    
+    # Search & Utilities
+    "duckduckgo-search>=4.1.1",
+    
+    # AI SDKs - Core Frameworks
+    "autogen-agentchat>=0.2.0",
+    "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "langchain-community>=0.1.0",
     "crewai>=0.11.0",
-    "langgraph>=0.0.15",
+    "langgraph>=0.0.30",
+    
+    # AI Provider SDKs
     "openai>=1.12.0",
-    "fastapi==0.104.1",
-    "uvicorn==0.24.0",
-    "sse-starlette==1.8.2",
-    "firebase-admin==6.4.0",
-    "python-multipart==0.0.6",
-    "python-dotenv==1.0.0",
-    "google-cloud-firestore==2.13.1",
-    "aiohttp==3.9.1",
-    "duckduckgo-search==4.1.1"
+    "google-generativeai>=0.3.0",
+    "anthropic>=0.7.0",
+    
+    # Agent Lightning (separate install - optional)
+    # "agent-lightning>=1.0.0",  # Commented out as optional
+    
+    # Payment & Security
+    "stripe>=7.0.0",
+    "cryptography>=41.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "web3>=6.0.0",
+    
+    # Additional utilities
+    "pydantic>=2.0.0",
+    "httpx>=0.25.0",
+    "websockets>=12.0",
+    "asyncio-mqtt>=0.16.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/grupa-ai/agent-mcp"
-Documentation = "https://github.com/grupa-ai/agent-mcp#readme"
-Repository = "https://github.com/grupa-ai/agent-mcp"
+Homepage = "https://github.com/agentmcp/agent-mcp"
+Documentation = "https://docs.agentmcp.ai"
+Repository = "https://github.com/agentmcp/agent-mcp"
+"Bug Tracker" = "https://github.com/agentmcp/agent-mcp/issues"
+Discord = "https://discord.gg/dDTem2P"
 
 [project.scripts]
 mcp-agent = "agent_mcp.cli:main"
+agent-mcp = "agent_mcp.cli:main"
+mcp-server = "agent_mcp.server:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "myst-parser>=2.0.0",
+]
+enterprise = [
+    "redis>=5.0.0",
+    "celery>=5.3.0",
+    "kubernetes>=28.0.0",
+    "prometheus-client>=0.19.0",
+    "grafana-api>=1.0.3",
+]
+lightning = [
+    "agent-lightning>=1.0.0",
+]
+all_providers = [
+    "agent-lightning>=1.0.0",
+]
 
 [tool.setuptools.packages.find]
 # Exclude non-package directories and build artifacts
@@ -61,4 +127,4 @@ exclude = [
 
 # Include all Python files and data files in the package
 [tool.setuptools.package-data]
-"agent_mcp" = ["*.py", "*.json", "*.yaml", "*.yml"]
+"agent_mcp" = ["*.py", "*.json", "*.yaml", "*.yml", "config/*", "templates/*", "static/*"]
