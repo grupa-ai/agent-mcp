@@ -2,7 +2,7 @@
 AgentMCP - Model Context Protocol for AI Agents
 """
 
-__version__ = "0.1.6"
+__version__ = "0.1.7"
 
 # Core components
 try:
