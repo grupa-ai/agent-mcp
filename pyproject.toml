@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agent-mcp"
-version = "0.1.7"
+version = "0.1.8"
 description = "The Universal System for AI Agent Collaboration - Connect any AI agent to every other agent"
 authors = [{name = "GrupaAI", email = "geniusgeek2014@gmail.com"}]
 readme = "README.md"
