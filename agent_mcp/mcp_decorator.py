@@ -1,5 +1,7 @@
 """
 Simple one-line integration decorator for connecting agents to the AgentMCP network.
+
+Now with Social Handle Support (@handle style) for scalable discovery!
 """
 
 import functools
@@ -9,9 +11,98 @@ import os
 import json
 import logging
 import uuid
-from typing import Optional, Any, Callable, Tuple, Dict
+import hashlib
+import re
+from typing import Optional, Any, Callable, Tuple, Dict, List
 from .mcp_agent import MCPAgent
 from .mcp_transport import HTTPTransport
+
+
+# Handle validation regex
+HANDLE_PATTERN = re.compile(r'^@?[a-zA-Z][a-zA-Z0-9_-]*(?:@[a-zA-Z][a-zA-Z0-9_-]*)?(?:\.[a-zA-Z][a-zA-Z0-9_-]*)?$')
+
+
+def parse_handle(mcp_id: str) -> Dict[str, Any]:
+    """
+    Parse a handle string into components.
+    
+    Supported formats:
+        @claude.code-assistant     -> global, name=claude, service=code-assistant
+        @claude.code-assistant.agent -> same as above
+        @jane@corp.hr             -> org=jane, service=corp, scope=hr
+        @researcher@bio-ai        -> org=researcher, service=bio-ai
+    
+    Args:
+        mcp_id: The handle string
+        
+    Returns:
+        Dict with keys: name, org, service, scope, is_handle
+    """
+    # Check if it's a handle (starts with @ or contains @ in middle)
+    is_handle = mcp_id.startswith('@') or '@' in mcp_id
+    
+    if not is_handle:
+        # Plain string ID - convert to handle format for consistency
+        return {
+            "name": mcp_id,
+            "org": None,
+            "service": None,
+            "scope": "global",
+            "is_handle": False,
+            "original": mcp_id,
+            "handle_format": f"@{mcp_id}.agent"
+        }
+    
+    # Parse handle
+    handle = mcp_id.lstrip('@')
+    parts = handle.split('@')
+    
+    if len(parts) == 2:
+        # @name@org.service format
+        name, rest = parts
+        org_parts = rest.rsplit('.', 1)
+        if len(org_parts) > 1:
+            org, service = org_parts
+            scope = "public"
+        else:
+            org = None
+            service = org_parts[0]
+            scope = "global"
+    else:
+        # @name.service format
+        name = parts[0]
+        if '.' in name:
+            name_parts = name.split('.', 1)
+            name = name_parts[0]
+            service = name_parts[1] if len(name_parts) > 1 else None
+        else:
+            service = None
+        org = None
+        scope = "global"
+    
+    return {
+        "name": name,
+        "org": org,
+        "service": service,
+        "scope": scope,
+        "is_handle": True,
+        "original": mcp_id,
+        "handle_format": f"@{handle}"
+    }
+
+
+def is_valid_handle(mcp_id: str) -> bool:
+    """Check if a string is a valid handle format"""
+    if not mcp_id:
+        return False
+    
+    # Allow plain strings too (backward compatibility)
+    if not mcp_id.startswith('@') and '@' not in mcp_id:
+        return True
+    
+    # Validate handle format
+    cleaned = mcp_id.lstrip('@')
+    return bool(HANDLE_PATTERN.match(cleaned))
 
 # Default to environment variable or fallback to localhost
 DEFAULT_MCP_SERVER = os.getenv('MCP_SERVER_URL', "https://mcp-server-ixlfhxquwq-ew.a.run.app")
@@ -60,13 +151,28 @@ class MCPAgentDecorator:
         """Called when an instance of the decorated class is created."""
         instance._mcp = MCPAgent(
             name=self._agent_class.__name__,
-            system_message=None # Or derive from docstring?
+            system_message=None
         )
-        instance._mcp_id = self._mcp_id_provided or str(uuid.uuid4())
-        instance._registered_agent_id: Optional[str] = None
+        
+        # Handle social @handle style for agent ID
+        raw_id = self._mcp_id_provided or str(uuid.uuid4())
+        handle_info = parse_handle(raw_id)
+        
+        # Store the handle info for discovery
+        instance._handle_info = handle_info
+        # Use handle format as the canonical ID
+        instance._mcp_id = handle_info["handle_format"] if handle_info["is_handle"] else raw_id
+        instance._mcp_id_raw = raw_id  # Keep original for backward compat
+        
+        # For DNS-style discovery
+        instance._handle = instance._mcp_id
+        instance._org = handle_info.get("org")
+        instance._service = handle_info.get("service")
+        
+        instance._registered_agent_id = None
         instance._mcp_tools = {}
         instance.transport = HTTPTransport.from_url(self._mcp_server)
-        instance.context_store = {} # Simple dict for context
+        instance.context_store = {}
 
         # Process tools provided to the decorator
         if self._tools_funcs:
@@ -88,11 +194,20 @@ class MCPAgentDecorator:
         if not hasattr(self, 'transport') or self.transport is None:
              raise RuntimeError("MCP Transport not initialized. Did you call __init__?")
              
+        # Include handle info for DNS-style discovery
+        handle_info = getattr(self, '_handle_info', parse_handle(self._mcp_id))
+        
         agent_info = {
             "name": self._mcp.name,
-            "type": self.__class__.__name__, # Use instance's class name
+            "type": self.__class__.__name__,
             "tools": list(self._mcp_tools.keys()),
-            "version": self._mcp_version # Use the version stored on the instance
+            "version": self._mcp_version,
+            # Handle info for discovery
+            "handle": self._mcp_id,
+            "is_handle": handle_info.get("is_handle", False),
+            "org": handle_info.get("org"),
+            "service": handle_info.get("service"),
+            "scope": handle_info.get("scope", "global")
         }
         
         # --- Begin integrated registration logic (mimicking HTTPTransport) ---
@@ -255,3 +370,87 @@ def register_tool(name: str, description: Optional[str] = None):
         
         return wrapper
     return decorator
+
+
+# --- Social Handle Convenience Functions ---
+
+def create_handle(name: str, org: Optional[str] = None, service: str = "agent") -> str:
+    """
+    Create a social handle for an agent.
+    
+    Args:
+        name: Agent name (e.g., "claude", "gpt4", "researcher")
+        org: Organization (e.g., "bio-ai", "corp", "finance")
+        service: Service type (e.g., "agent", "mcp", "ai")
+    
+    Returns:
+        Formatted handle string
+        
+    Examples:
+        create_handle("claude", service="code-assistant") 
+            -> "@claude.code-assistant"
+        create_handle("jane", org="corp", service="hr")
+            -> "@jane@corp.hr"
+    """
+    if org:
+        return f"@{name}@{org}.{service}"
+    return f"@{name}.{service}"
+
+
+def extract_handle_parts(handle: str) -> Dict[str, Any]:
+    """
+    Extract parts from a handle for display/logging.
+    
+    Args:
+        handle: Handle string like "@claude.code-assistant" or "@jane@corp.hr"
+    
+    Returns:
+        Dict with name, org, service, scope
+    """
+    return parse_handle(handle)
+
+
+# --- Demo/Usage Examples ---
+
+"""
+Example Usage with Social Handles:
+
+# 1. Basic handle (global scope)
+@mcp_agent(mcp_id="@claude.code-assistant")
+class MyCodingAgent:
+    def code_review(self, code):
+        return "Looks good!"
+
+# 2. Organization handle
+@mcp_agent(mcp_id="@researcher@bio-ai.medical")
+class BioResearchAgent:
+    def analyze_dna(self, sequence):
+        return "Analysis complete!"
+
+# 3. Corporate handle
+@mcp_agent(mcp_id="@jane@acme.hr")
+class HRAgent:
+    def process_payroll(self, employee_id):
+        return "Payroll processed!"
+
+# 4. Plain string still works (backward compatible)
+@mcp_agent(mcp_id="MyAgent123")
+class LegacyAgent:
+    pass
+
+# 5. Using convenience function
+handle = create_handle("assistant", org="startup", service="ai")
+# Result: "@assistant@startup.ai"
+"""
+
+__all__ = [
+    'mcp_agent',
+    'MCPAgentDecorator', 
+    'register_tool',
+    'register_with_server',
+    'parse_handle',
+    'is_valid_handle',
+    'create_handle',
+    'extract_handle_parts',
+    'HANDLE_PATTERN',
+]
