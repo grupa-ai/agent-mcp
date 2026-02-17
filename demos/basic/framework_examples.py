@@ -19,7 +19,7 @@ from langchain_community.tools.ddg_search import DuckDuckGoSearchRun
 from langchain.schema.messages import SystemMessage
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-@mcp_agent(name="LangChainResearcher")
+@mcp_agent(mcp_id="LangChainResearcher")
 class LangChainResearchAgent:
     def __init__(self):
         # Set up LangChain components
@@ -55,7 +55,7 @@ class GraphState(TypedDict):
     analysis: str
     output: str
 
-@mcp_agent(name="LangGraphAnalyzer")
+@mcp_agent(mcp_id="LangGraphAnalyzer")
 class LangGraphAnalysisAgent:
     def __init__(self):
         # Set up LangGraph components

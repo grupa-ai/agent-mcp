@@ -10,7 +10,7 @@ from agent_mcp.mcp_decorator import mcp_agent
 from crewai import Task
 
 # One-line integration with CrewAI
-@mcp_agent(name="ResearchAgent")
+@mcp_agent(mcp_id="ResearchAgent")
 class ResearchAgent(CrewAgent):
     def __init__(self):
         super().__init__(

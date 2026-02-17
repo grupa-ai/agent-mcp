@@ -6,7 +6,7 @@ from agent_mcp import mcp_agent
 from agent_mcp.mcp_decorator import register_tool
 
 # Example 1: Simple class-level integration
-@mcp_agent(name="SimpleAgent")
+@mcp_agent(mcp_id="SimpleAgent")
 class MyAgent:
     def generate_response(self, message: str) -> str:
         return f"Received: {message}"
@@ -17,7 +17,7 @@ class MyAgent:
 
 # Example 2: More complex agent with custom tools
 @mcp_agent(
-    name="CalculatorAgent",
+    mcp_id="CalculatorAgent",
     #system_message="I am a calculator agent that can perform basic math operations."
 )
 class CalculatorAgent:
@@ -44,8 +44,8 @@ def main():
     print(f"4 * 5 = {calc_agent.multiply(4, 5)}")
     
     # Show available MCP tools for each agent
-    print("\nSimpleAgent MCP tools:", simple_agent.mcp_tools.keys())
-    print("CalculatorAgent MCP tools:", calc_agent.mcp_tools.keys())
+    print("\nSimpleAgent MCP tools:", simple_agent._mcp_tools.keys())
+    print("CalculatorAgent MCP tools:", calc_agent._mcp_tools.keys())
 
 if __name__ == "__main__":
     main()

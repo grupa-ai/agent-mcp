@@ -27,19 +27,38 @@ def parse_handle(mcp_id: str) -> Dict[str, Any]:
     Parse a handle string into components.
     
     Supported formats:
-        @claude.code-assistant     -> global, name=claude, service=code-assistant
-        @claude.code-assistant.agent -> same as above
-        @jane@corp.hr             -> org=jane, service=corp, scope=hr
-        @researcher@bio-ai        -> org=researcher, service=bio-ai
+        @alice@acme.corp       -> Company mode (no external)
+        @alice@acme.business   -> Business mode (sanitized)
+        @alice@acme.public    -> Public mode (minimal)
+        @claude.code-assistant -> global, name=claude, service=code-assistant
+        @jane@corp.hr         -> org=jane, service=corp
+    
+    Network Modes (determined by suffix):
+        .corp     -> Company/Intranet (no external connection)
+        .business -> Business network (trusted partners, sanitized)
+        .public  -> Public MACNet (minimal filter)
     
     Args:
         mcp_id: The handle string
         
     Returns:
-        Dict with keys: name, org, service, scope, is_handle
+        Dict with keys: name, org, service, scope, is_handle, network_mode
     """
     # Check if it's a handle (starts with @ or contains @ in middle)
     is_handle = mcp_id.startswith('@') or '@' in mcp_id
+    
+    # Determine network mode from suffix
+    def get_network_mode(handle_str: str) -> str:
+        handle_lower = handle_str.lower()
+        if '.corp' in handle_lower:
+            return "company"  # No external - fully isolated
+        elif '.business' in handle_lower:
+            return "business"  # Sanitized - partners
+        elif '.public' in handle_lower:
+            return "public"  # Minimal - public
+        return "public"  # Default to public
+    
+    network_mode = get_network_mode(mcp_id)
     
     if not is_handle:
         # Plain string ID - convert to handle format for consistency
@@ -48,6 +67,7 @@ def parse_handle(mcp_id: str) -> Dict[str, Any]:
             "org": None,
             "service": None,
             "scope": "global",
+            "network_mode": "public",  # Default for plain strings
             "is_handle": False,
             "original": mcp_id,
             "handle_format": f"@{mcp_id}.agent"
@@ -85,6 +105,7 @@ def parse_handle(mcp_id: str) -> Dict[str, Any]:
         "org": org,
         "service": service,
         "scope": scope,
+        "network_mode": network_mode,
         "is_handle": True,
         "original": mcp_id,
         "handle_format": f"@{handle}"
@@ -359,7 +380,8 @@ def register_tool(name: str, description: Optional[str] = None):
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            if isinstance(self, MCPAgent):
+            # Check if this is an MCP-decorated agent (has _mcp attribute)
+            if hasattr(self, '_mcp') or hasattr(self, '_mcp_tools'):
                 return func(self, *args, **kwargs)
             raise TypeError("register_tool can only be used with MCP agents")
         
