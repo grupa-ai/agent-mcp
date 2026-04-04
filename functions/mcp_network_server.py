@@ -169,8 +169,8 @@ class MessageQueue:
         """Get all unacknowledged messages for an agent after the last_message_id"""
         messages = []
         try:
-            print(f"\n====== FETCHING MESSAGES FOR {agent_id} ======")
-            print(f"Last message ID: {last_message_id}")
+            logger.debug(f"\n====== FETCHING MESSAGES FOR {agent_id} ======")
+            logger.debug(f"Last message ID: {last_message_id}")
             
             # Build the query
             query = self.messages_ref.document(agent_id).collection('queue')
@@ -200,7 +200,7 @@ class MessageQueue:
                             # Only get messages after the last one
                             query = query.where('timestamp', '>', last_timestamp)
                 except Exception as e:
-                    print(f"Error getting last message {last_message_id}: {e}")
+                    logger.warning(f"Error getting last message {last_message_id}: {e}")
             
             # Limit to 10 messages at a time
             query = query.limit(10)
@@ -211,27 +211,13 @@ class MessageQueue:
                 msg_data['id'] = doc.id
                 msg_data = convert_timestamps_to_isoformat(msg_data)
                 messages.append(msg_data)
-                
-                # Log message details
-                print(f"\n----- Message {msg_data['id']} -----")
-                print(f"Type: {msg_data.get('type', 'unknown')}")
-                print(f"Task ID: {msg_data.get('task_id', 'unknown')}")
-                print(f"Acknowledged: {msg_data.get('acknowledged', False)}")
-                print(f"Timestamp: {msg_data.get('timestamp', 'unknown')}")
-                if 'content' in msg_data:
-                    print(f"Content: {json.dumps(msg_data['content'], indent=2)}")
-                if 'description' in msg_data:
-                    print(f"Description: {msg_data['description']}")
-                if 'reply_to' in msg_data:
-                    print(f"Reply To: {msg_data['reply_to']}")
-                print("-" * 40)
             
-            print(f"Found {len(messages)} messages")
-            print("====== END MESSAGES ======\n")
+            logger.debug(f"Found {len(messages)} messages")
+            logger.debug("====== END MESSAGES ======\n")
             return messages
 
         except Exception as e:
-            print(f"Error getting messages for {agent_id}: {e}")
+            logger.error(f"Error getting messages for {agent_id}: {e}")
             return []
 
     def delete_message(self, target_id: str, message_id: str):
