@@ -8,6 +8,7 @@ enabling agents to communicate over HTTP and SSE.
 from abc import ABC, abstractmethod
 import asyncio
 import json
+import urllib.parse
 import aiohttp # Added this line
 from typing import Dict, Any, Optional, Callable, AsyncGenerator, Tuple
 from aiohttp import web, ClientSession, TCPConnector, ClientTimeout, ClientConnectorError, ClientPayloadError
@@ -408,13 +409,19 @@ class HTTPTransport(MCPTransport):
                     parsed_target = target
                     if "://" in target:
                         try:
-                            # Extract the last part of the path as the agent name
-                            parsed_target = target.split('/')[-1]
-                            if not parsed_target: # Handle trailing slash case
-                                parsed_target = target.split('/')[-2]
+                            # Use urllib.parse for robust URL handling
+                            parsed_url = urllib.parse.urlparse(target)
+
+                            # Extract the path and remove trailing slashes
+                            path = parsed_url.path.rstrip('/')
+
+                            # Get the last part of the path as the agent name
+                            if path:
+                                parsed_target = path.split('/')[-1]
+
                             logger.info(f"[{self.agent_name}] Parsed target URL '{target}' to agent name '{parsed_target}'")
-                        except IndexError:
-                            logger.warning(f"[{self.agent_name}] Could not parse agent name from target URL '{target}', using original.")
+                        except Exception as e:
+                            logger.warning(f"[{self.agent_name}] Could not parse agent name from target URL '{target}' ({e}), using original.")
                             parsed_target = target # Fallback to original if parsing fails
                     
                     # Construct the URL using the potentially parsed target
