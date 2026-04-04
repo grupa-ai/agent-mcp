@@ -16,7 +16,7 @@ from langchain_community.utilities.duckduckgo_search import DuckDuckGoSearchAPIW
 from langchain_community.tools import Tool
 from langchain.agents import AgentExecutor, OpenAIFunctionsAgent
 from langchain.schema.messages import SystemMessage
-# from aztp_client import Aztp  # Commented out - optional dependency
+from aztp_client import Aztp
 from langchain_community.tools import DuckDuckGoSearchRun
 
 # Google Gemini imports
@@ -241,17 +241,19 @@ async def main():
     await influencer_proxy.connect_to_remote_agent("Influenxers", group.server_url) #Influenxers is the id to Amrit's inflencer agent  
     
     # Create a secure agent
-    # TODO: come back to do secure connections
-    #client = Aztp(api_key=os.getenv("AZTP_API_KEY"))
-    #influencer_proxy = await client.secure_connect(influencer_proxy, name="Influencer", config={"isGlobalIdentity": True})
+    aztp_key = os.getenv("AZTP_API_KEY")
+    if not aztp_key:
+        raise ValueError("AZTP_API_KEY environment variable is not set")
+    client = Aztp(api_key=aztp_key)
+    influencer_proxy = await client.secure_connect(influencer_proxy, name="Influencer", config={"isGlobalIdentity": True})
 
     # Verify identity
-    #is_valid = await client.verify_identity(influencer_proxy)
-    #print(f"Influencer identity is valid: {is_valid}")
+    is_valid = await client.verify_identity(influencer_proxy)
+    print(f"Influencer identity is valid: {is_valid}")
     
     # Get identity details
-    #identity = await client.get_identity(influencer_proxy)
-    #print(f"Influencer identity: {identity}")
+    identity = await client.get_identity(influencer_proxy)
+    print(f"Influencer identity: {identity}")
     
     group.add_agent(influencer_proxy)
 
